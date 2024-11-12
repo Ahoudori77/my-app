@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Pagination from "@/components/ui/pagination";
 import SortableTableHead from "@/components/ui/SortableTableHead";
 import {
   Select,
@@ -23,14 +24,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { AlertTriangle } from "lucide-react"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
@@ -243,45 +236,11 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <div className="mt-6 flex justify-center">
-        <Pagination>
-  <PaginationContent className="flex items-center space-x-2">
-    <PaginationItem>
-      <PaginationPrevious
-  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-  className={`px-3 py-2 rounded-md ${
-    currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200"
-  }`}
-      >
-        Previous
-      </PaginationPrevious>
-    </PaginationItem>
-    
-    {[...Array(totalPages)].map((_, index) => (
-      <PaginationItem key={index}>
-        <PaginationLink
-          isActive={currentPage === index + 1}
-          onClick={() => handlePageChange(index + 1)}
-          className={`px-3 py-2 rounded-md ${currentPage === index + 1 ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
-        >
-          {index + 1}
-        </PaginationLink>
-      </PaginationItem>
-    ))}
-
-    <PaginationItem>
-      <PaginationNext
-  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-  className={`px-3 py-2 rounded-md ${
-    currentPage === totalPages ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200"
-  }`}
-      >
-        Next
-      </PaginationNext>
-    </PaginationItem>
-  </PaginationContent>
-</Pagination>
-</div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       </main>
       <Footer />
     </div>

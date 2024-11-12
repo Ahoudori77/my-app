@@ -1,232 +1,86 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ButtonProps, buttonVariants } from "@/components/ui/button";
 
-const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
-  <nav
-    role="navigation"
-    aria-label="pagination"
-    className={cn("mx-auto flex w-full justify-center", className)}
-    {...props}
-  />
-);
-Pagination.displayName = "Pagination";
-
-const PaginationContent = React.forwardRef<
-  HTMLUListElement,
-  React.ComponentProps<"ul">
->(({ className, ...props }, ref) => (
-  <ul
-    ref={ref}
-    className={cn("flex flex-row items-center gap-1", className)}
-    {...props}
-  />
-));
-PaginationContent.displayName = "PaginationContent";
-
-const PaginationItem = React.forwardRef<
-  HTMLLIElement,
-  React.ComponentProps<"li">
->(({ className, ...props }, ref) => (
-  <li ref={ref} className={cn("", className)} {...props} />
-));
-PaginationItem.displayName = "PaginationItem";
-
-type PaginationLinkProps = {
-  isActive?: boolean;
-} & Pick<ButtonProps, "size"> &
-  React.ComponentProps<"a">;
-
-const PaginationLink = ({
-  className,
-  isActive,
-  size = "icon",
-  ...props
-}: PaginationLinkProps) => (
-  <a
-    aria-current={isActive ? "page" : undefined}
-    className={cn(
-      buttonVariants({
-        variant: isActive ? "outline" : "ghost",
-        size,
-      }),
-      className
-    )}
-    {...props}
-  />
-);
-PaginationLink.displayName = "PaginationLink";
-
-const PaginationPrevious = ({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationLink>) => {
-  const isDisabled = props.onClick === undefined; // クリックイベントがない場合は無効化
-  return (
-    <PaginationLink
-      aria-label="Go to previous page"
-      size="default"
-      className={cn(
-        "gap-1 pl-2.5",
-        isDisabled ? "text-gray-400 cursor-not-allowed" : "",
-        className
-      )}
-      {...(isDisabled ? { onClick: undefined } : props)}
-    >
-      <ChevronLeft className="h-4 w-4" />
-      <span>Previous</span>
-    </PaginationLink>
-  );
-};
-PaginationPrevious.displayName = "PaginationPrevious";
-
-const PaginationNext = ({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationLink>) => {
-  const isDisabled = props.onClick === undefined; // クリックイベントがない場合は無効化
-  return (
-    <PaginationLink
-      aria-label="Go to next page"
-      size="default"
-      className={cn(
-        "gap-1 pr-2.5",
-        isDisabled ? "text-gray-400 cursor-not-allowed" : "",
-        className
-      )}
-      {...(isDisabled ? { onClick: undefined } : props)}
-    >
-      <span>Next</span>
-      <ChevronRight className="h-4 w-4" />
-    </PaginationLink>
-  );
-};
-PaginationNext.displayName = "PaginationNext";
-
-const PaginationEllipsis = ({
-  className,
-  ...props
-}: React.ComponentProps<"span">) => (
-  <span
-    aria-hidden
-    className={cn("flex h-9 w-9 items-center justify-center", className)}
-    {...props}
-  >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More pages</span>
-  </span>
-);
-PaginationEllipsis.displayName = "PaginationEllipsis";
-
-export {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-};
-
-// Pagination with ellipsis for many pages
 type PaginationProps = {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 };
 
-export const Paginated = ({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: PaginationProps) => {
+const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
   const renderPageNumbers = () => {
     const pageLinks = [];
+
     if (totalPages <= 4) {
-      // Display all pages if total pages is 4 or less
+      // 全ページ表示（4ページ以下の場合）
       for (let i = 1; i <= totalPages; i++) {
         pageLinks.push(
-          <PaginationItem key={i}>
-            <PaginationLink
-              isActive={currentPage === i}
-              onClick={() => onPageChange(i)}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
+          <button
+            key={i}
+            onClick={() => onPageChange(i)}
+            className={`px-3 py-2 rounded-md ${currentPage === i ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
+          >
+            {i}
+          </button>
         );
       }
     } else {
-      // Display first, last, current, and surrounding pages with ellipsis
+      // 最初、最後、現在のページと周囲のページの表示（4ページ以上の場合）
       if (currentPage > 2) {
         pageLinks.push(
-          <PaginationItem key={1}>
-            <PaginationLink onClick={() => onPageChange(1)}>1</PaginationLink>
-          </PaginationItem>
+          <button key={1} onClick={() => onPageChange(1)} className="px-3 py-2 rounded-md hover:bg-gray-200">
+            1
+          </button>
         );
-        if (currentPage > 3) {
-          pageLinks.push(<PaginationEllipsis key="start-ellipsis" />);
-        }
+        if (currentPage > 3) pageLinks.push(<span key="start-ellipsis"><MoreHorizontal className="h-4 w-4" /></span>);
       }
 
-      // Display surrounding pages
-      for (
-        let i = Math.max(1, currentPage - 1);
-        i <= Math.min(totalPages, currentPage + 1);
-        i++
-      ) {
+      // 現在のページとその周辺
+      for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) {
         pageLinks.push(
-          <PaginationItem key={i}>
-            <PaginationLink
-              isActive={currentPage === i}
-              onClick={() => onPageChange(i)}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
+          <button
+            key={i}
+            onClick={() => onPageChange(i)}
+            className={`px-3 py-2 rounded-md ${currentPage === i ? "bg-blue-500 text-white" : "hover:bg-gray-200"}`}
+          >
+            {i}
+          </button>
         );
       }
 
       if (currentPage < totalPages - 1) {
-        if (currentPage < totalPages - 2) {
-          pageLinks.push(<PaginationEllipsis key="end-ellipsis" />);
-        }
+        if (currentPage < totalPages - 2) pageLinks.push(<span key="end-ellipsis"><MoreHorizontal className="h-4 w-4" /></span>);
         pageLinks.push(
-          <PaginationItem key={totalPages}>
-            <PaginationLink onClick={() => onPageChange(totalPages)}>
-              {totalPages}
-            </PaginationLink>
-          </PaginationItem>
+          <button key={totalPages} onClick={() => onPageChange(totalPages)} className="px-3 py-2 rounded-md hover:bg-gray-200">
+            {totalPages}
+          </button>
         );
       }
     }
+
     return pageLinks;
   };
 
   return (
-    <Pagination>
-      <PaginationContent>
-        <PaginationItem>
-          <PaginationPrevious
-  onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
-  className={`px-3 py-2 rounded-md ${
-    currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200"
-  }`}
-          />
-        </PaginationItem>
+    <nav className="flex items-center space-x-2 justify-center mt-6">
+      <button
+        onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+        className={`px-3 py-2 rounded-md ${currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200"}`}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
 
-        {renderPageNumbers()}
+      {renderPageNumbers()}
 
-        <PaginationItem>
-          <PaginationNext
-  onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
-  className={`px-3 py-2 rounded-md ${
-    currentPage === totalPages ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200"
-  }`}
-          />
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
+      <button
+        onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+        className={`px-3 py-2 rounded-md ${currentPage === totalPages ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200"}`}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </nav>
   );
 };
+
+export default Pagination;
