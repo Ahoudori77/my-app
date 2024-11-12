@@ -1,8 +1,7 @@
-import * as React from "react"
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
-
-import { cn } from "@/lib/utils"
-import { ButtonProps, buttonVariants } from "@/components/ui/button"
+import * as React from "react";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ButtonProps, buttonVariants } from "@/components/ui/button";
 
 const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
   <nav
@@ -11,8 +10,8 @@ const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
     className={cn("mx-auto flex w-full justify-center", className)}
     {...props}
   />
-)
-Pagination.displayName = "Pagination"
+);
+Pagination.displayName = "Pagination";
 
 const PaginationContent = React.forwardRef<
   HTMLUListElement,
@@ -23,21 +22,21 @@ const PaginationContent = React.forwardRef<
     className={cn("flex flex-row items-center gap-1", className)}
     {...props}
   />
-))
-PaginationContent.displayName = "PaginationContent"
+));
+PaginationContent.displayName = "PaginationContent";
 
 const PaginationItem = React.forwardRef<
   HTMLLIElement,
   React.ComponentProps<"li">
 >(({ className, ...props }, ref) => (
   <li ref={ref} className={cn("", className)} {...props} />
-))
-PaginationItem.displayName = "PaginationItem"
+));
+PaginationItem.displayName = "PaginationItem";
 
 type PaginationLinkProps = {
-  isActive?: boolean
+  isActive?: boolean;
 } & Pick<ButtonProps, "size"> &
-  React.ComponentProps<"a">
+  React.ComponentProps<"a">;
 
 const PaginationLink = ({
   className,
@@ -56,40 +55,54 @@ const PaginationLink = ({
     )}
     {...props}
   />
-)
-PaginationLink.displayName = "PaginationLink"
+);
+PaginationLink.displayName = "PaginationLink";
 
 const PaginationPrevious = ({
   className,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) => (
-  <PaginationLink
-    aria-label="Go to previous page"
-    size="default"
-    className={cn("gap-1 pl-2.5", className)}
-    {...props}
-  >
-    <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
-  </PaginationLink>
-)
-PaginationPrevious.displayName = "PaginationPrevious"
+}: React.ComponentProps<typeof PaginationLink>) => {
+  const isDisabled = props.onClick === undefined; // クリックイベントがない場合は無効化
+  return (
+    <PaginationLink
+      aria-label="Go to previous page"
+      size="default"
+      className={cn(
+        "gap-1 pl-2.5",
+        isDisabled ? "text-gray-400 cursor-not-allowed" : "",
+        className
+      )}
+      {...(isDisabled ? { onClick: undefined } : props)}
+    >
+      <ChevronLeft className="h-4 w-4" />
+      <span>Previous</span>
+    </PaginationLink>
+  );
+};
+PaginationPrevious.displayName = "PaginationPrevious";
 
 const PaginationNext = ({
   className,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) => (
-  <PaginationLink
-    aria-label="Go to next page"
-    size="default"
-    className={cn("gap-1 pr-2.5", className)}
-    {...props}
-  >
-    <span>Next</span>
-    <ChevronRight className="h-4 w-4" />
-  </PaginationLink>
-)
-PaginationNext.displayName = "PaginationNext"
+}: React.ComponentProps<typeof PaginationLink>) => {
+  const isDisabled = props.onClick === undefined; // クリックイベントがない場合は無効化
+  return (
+    <PaginationLink
+      aria-label="Go to next page"
+      size="default"
+      className={cn(
+        "gap-1 pr-2.5",
+        isDisabled ? "text-gray-400 cursor-not-allowed" : "",
+        className
+      )}
+      {...(isDisabled ? { onClick: undefined } : props)}
+    >
+      <span>Next</span>
+      <ChevronRight className="h-4 w-4" />
+    </PaginationLink>
+  );
+};
+PaginationNext.displayName = "PaginationNext";
 
 const PaginationEllipsis = ({
   className,
@@ -103,8 +116,8 @@ const PaginationEllipsis = ({
     <MoreHorizontal className="h-4 w-4" />
     <span className="sr-only">More pages</span>
   </span>
-)
-PaginationEllipsis.displayName = "PaginationEllipsis"
+);
+PaginationEllipsis.displayName = "PaginationEllipsis";
 
 export {
   Pagination,
@@ -114,4 +127,106 @@ export {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-}
+};
+
+// Pagination with ellipsis for many pages
+type PaginationProps = {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+};
+
+export const Paginated = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: PaginationProps) => {
+  const renderPageNumbers = () => {
+    const pageLinks = [];
+    if (totalPages <= 4) {
+      // Display all pages if total pages is 4 or less
+      for (let i = 1; i <= totalPages; i++) {
+        pageLinks.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              isActive={currentPage === i}
+              onClick={() => onPageChange(i)}
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    } else {
+      // Display first, last, current, and surrounding pages with ellipsis
+      if (currentPage > 2) {
+        pageLinks.push(
+          <PaginationItem key={1}>
+            <PaginationLink onClick={() => onPageChange(1)}>1</PaginationLink>
+          </PaginationItem>
+        );
+        if (currentPage > 3) {
+          pageLinks.push(<PaginationEllipsis key="start-ellipsis" />);
+        }
+      }
+
+      // Display surrounding pages
+      for (
+        let i = Math.max(1, currentPage - 1);
+        i <= Math.min(totalPages, currentPage + 1);
+        i++
+      ) {
+        pageLinks.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              isActive={currentPage === i}
+              onClick={() => onPageChange(i)}
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+
+      if (currentPage < totalPages - 1) {
+        if (currentPage < totalPages - 2) {
+          pageLinks.push(<PaginationEllipsis key="end-ellipsis" />);
+        }
+        pageLinks.push(
+          <PaginationItem key={totalPages}>
+            <PaginationLink onClick={() => onPageChange(totalPages)}>
+              {totalPages}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    }
+    return pageLinks;
+  };
+
+  return (
+    <Pagination>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious
+  onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+  className={`px-3 py-2 rounded-md ${
+    currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200"
+  }`}
+          />
+        </PaginationItem>
+
+        {renderPageNumbers()}
+
+        <PaginationItem>
+          <PaginationNext
+  onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+  className={`px-3 py-2 rounded-md ${
+    currentPage === totalPages ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200"
+  }`}
+          />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+  );
+};
