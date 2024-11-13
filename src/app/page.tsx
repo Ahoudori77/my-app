@@ -1,20 +1,21 @@
-'use client'
+'use client';
 import '../styles/globals.css';
 import { Search } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { useState } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import Pagination from "@/components/ui/pagination";
 import SortableTableHead from "@/components/ui/SortableTableHead";
+import axios from 'axios';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,60 +23,56 @@ import {
   TableHeader,
   TableHead,
   TableRow,
-} from "@/components/ui/table"
-import { AlertTriangle } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/table";
+import { AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-const userRole: 'office' | 'field' = 'office'
-type UserRole = 'field' | 'office'
+type UserRole = 'field' | 'office';
+const userRole: UserRole = 'office';
 
 type SortConfig = {
-  key: string
-  direction: 'asc' | 'desc'
-}
+  key: string;
+  direction: 'asc' | 'desc';
+};
+
 type InventoryItem = {
-  id: number
-  orderStatus: string
-  shelfNumber: string
-  attribute: string
-  itemName: string
-  manufacturer: string
-  optimalQuantity: number
-  reorderThreshold: number
-  currentQuantity: number
-  unit: string
-}
+  id: number;
+  orderStatus: string;
+  shelfNumber: string;
+  attribute: string;
+  itemName: string;
+  manufacturer: string;
+  optimalQuantity: number;
+  reorderThreshold: number;
+  currentQuantity: number;
+  unit: string;
+};
 
 export default function Dashboard() {
-  const userRole: UserRole = 'office';
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: 'asc' })
-  const [searchTerm, setSearchTerm] = useState("")
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: 'asc' });
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10; // 総ページ数を指定
+  const totalPages = 10;
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get<InventoryItem[]>('http://localhost:3001/api/inventory/items');
+        setInventoryItems(response.data);
+      } catch (error) {
+        console.error("データの取得に失敗しました:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
-
-  // サンプルデータ
-  const [inventoryItems] = useState<InventoryItem[]>([
-    {
-      id: 1,
-      orderStatus: "未発注",
-      shelfNumber: "A-1-1",
-      attribute: "油脂類",
-      itemName: "切削油",
-      manufacturer: "テックオイル",
-      optimalQuantity: 100,
-      reorderThreshold: 20,
-      currentQuantity: 15,
-      unit: "L"
-    },
-    // 他のサンプルデータ...
-  ])
 
   const handleSort = (key: string) => {
     setSortConfig((prev) => ({
@@ -137,73 +134,38 @@ export default function Dashboard() {
             </Button>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-gray-900">在庫一覧</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
+            {inventoryItems.length === 0 ? (
+      <p>データがありません</p>
+    ) : (
               <Table className="min-w-full divide-y divide-gray-200 bg-white shadow-md rounded-lg">
                 <TableHeader>
                   <TableRow>
-                    <SortableTableHead 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      sortKey="orderStatus" 
-                      currentSortKey={sortConfig.key} 
-                      direction={sortConfig.direction} 
-                      onSort={handleSort}
-                    >
+                    <SortableTableHead sortKey="orderStatus" currentSortKey={sortConfig.key} direction={sortConfig.direction} onSort={handleSort}>
                       発注状況
                     </SortableTableHead>
-                    <SortableTableHead 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      sortKey="shelfNumber" 
-                      currentSortKey={sortConfig.key} 
-                      direction={sortConfig.direction} 
-                      onSort={handleSort}
-                    >
+                    <SortableTableHead sortKey="shelfNumber" currentSortKey={sortConfig.key} direction={sortConfig.direction} onSort={handleSort}>
                       棚番
                     </SortableTableHead>
-                    <SortableTableHead
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" 
-                      sortKey="attribute" 
-                      currentSortKey={sortConfig.key} 
-                      direction={sortConfig.direction} 
-                      onSort={handleSort}
-                    >
+                    <SortableTableHead sortKey="attribute" currentSortKey={sortConfig.key} direction={sortConfig.direction} onSort={handleSort}>
                       属性
                     </SortableTableHead>
-                    <SortableTableHead 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      sortKey="itemName" 
-                      currentSortKey={sortConfig.key} 
-                      direction={sortConfig.direction} 
-                      onSort={handleSort}
-                    >
+                    <SortableTableHead sortKey="itemName" currentSortKey={sortConfig.key} direction={sortConfig.direction} onSort={handleSort}>
                       アイテム名
                     </SortableTableHead>
-                    <SortableTableHead 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      sortKey="manufacturer" 
-                      currentSortKey={sortConfig.key} 
-                      direction={sortConfig.direction} 
-                      onSort={handleSort}
-                    >
+                    <SortableTableHead sortKey="manufacturer" currentSortKey={sortConfig.key} direction={sortConfig.direction} onSort={handleSort}>
                       メーカー名
                     </SortableTableHead>
                     <TableHead className="text-right">適正在庫数</TableHead>
                     <TableHead className="text-right">発注基準数</TableHead>
-                    <SortableTableHead 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      sortKey="currentQuantity" 
-                      currentSortKey={sortConfig.key} 
-                      direction={sortConfig.direction} 
-                      onSort={handleSort}
-                    >
+                    <SortableTableHead sortKey="currentQuantity" currentSortKey={sortConfig.key} direction={sortConfig.direction} onSort={handleSort}>
                       在庫数
                     </SortableTableHead>
-                    {/* {userRole === 'office' && <TableHead>アクション</TableHead>} */}
                   </TableRow>
                 </TableHeader>
                 <TableBody className="bg-white divide-y divide-gray-200">
@@ -232,17 +194,14 @@ export default function Dashboard() {
                   ))}
                 </TableBody>
               </Table>
+                  )}
             </div>
           </CardContent>
         </Card>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
       </main>
       <Footer />
     </div>
-  )
+  );
 }

@@ -1,7 +1,6 @@
 'use client'
 import Header from "@/components/Header";
 import Footer from "@/components/Footer"; 
-
 import { useState, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,15 +21,8 @@ import {
 } from "@/components/ui/table"
 import { Menu, LogOut, Search, Plus, Minus, AlertTriangle, ChevronUp, ChevronDown } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import Pagination from "@/components/ui/pagination";
@@ -350,32 +342,8 @@ export default function UsageInputPage({ userRole }: { userRole: UserRole }) {
           </CardContent>
         </Card>
 
-        {/* ページネーション */}
-        <div className="mt-4 flex justify-center">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} />
-              </PaginationItem>
-              {[...Array(totalPages)].map((_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    onClick={() => setCurrentPage(i + 1)}
-                    isActive={currentPage === i + 1}
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-
         {/* 確認ダイアログ */}
-        <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <Dialog open={isConfirmDialogOpen} onOpenChange={() => setIsConfirmDialogOpen(false)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>使用量の確認</DialogTitle>
@@ -415,7 +383,6 @@ export default function UsageInputPage({ userRole }: { userRole: UserRole }) {
           onPageChange={handlePageChange}
         />
       </main>
-
       <Footer />
     </div>
   )
