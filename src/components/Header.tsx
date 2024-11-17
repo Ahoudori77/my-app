@@ -17,8 +17,7 @@ import { Home, Box, ClipboardList, Settings, HelpCircle, FileInput } from "lucid
 // ナビゲーション項目の定義
 const navigationItems = [
   { name: 'ダッシュボード', href: '/', icon: Home },
-  { name: '在庫管理', href: '/inventory', icon: Box },
-  { name: '発注管理', href: '/orders', icon: ClipboardList },
+  { name: '在庫・発注管理', href: '/inventory-management', icon: Box },  // 修正
   { name: '使用量入力', href: '/usage-input', icon: FileInput },
   { name: '設定', href: '/settings', icon: Settings },
   { name: 'ヘルプ', href: '/help', icon: HelpCircle },
@@ -51,6 +50,7 @@ export default function Header() {
                   <Link
                     key={item.name}
                     href={item.href}
+                    prefetch={false}  // 遷移速度を向上させるためにプリフェッチを無効化
                     className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                       isCurrentPage(item.href) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                     }`}
