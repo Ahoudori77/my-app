@@ -82,26 +82,26 @@ export default function UsageInputPage({ userRole }: { userRole: UserRole }) {
   }, [])
 
   const handleSearch = useCallback(async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/inventory/search', {
+      const response = await fetch('http://127.0.0.1:3001/api/inventory/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...searchFilters, page: currentPage, itemsPerPage }),
-      })
-      if (!response.ok) throw new Error('検索に失敗しました')
-      const data = await response.json()
-      setSearchResults(data.items)
-      setTotalPages(data.totalPages)
+      });
+      if (!response.ok) throw new Error('検索に失敗しました');
+      const data = await response.json();
+      setSearchResults(data.items); // 検索結果をセット
+      setTotalPages(data.totalPages); // 総ページ数をセット
     } catch (error) {
-      console.error('Search error:', error)
+      console.error('Search error:', error);
       toast({
         title: "エラー",
         description: "検索中にエラーが発生しました。もう一度お試しください。",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }, [searchFilters, currentPage, toast])
 
@@ -122,36 +122,36 @@ export default function UsageInputPage({ userRole }: { userRole: UserRole }) {
 
   const handleSubmit = useCallback(async () => {
     try {
-      const response = await fetch('/api/inventory/usage', {
+      const response = await fetch('http://127.0.0.1:3001/api/inventory/usage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(usageInputs),
-      })
-      if (!response.ok) throw new Error('使用量の送信に失敗しました')
+      });
+      if (!response.ok) throw new Error('使用量の送信に失敗しました');
       
       // 在庫数を自動更新
       setSearchResults(prevResults => 
         prevResults.map(item => ({
           ...item,
-          currentQuantity: item.currentQuantity - (usageInputs[item.id] || 0)
+          currentQuantity: item.currentQuantity - (usageInputs[item.id] || 0),
         }))
-      )
-
+      );
+  
       toast({
         title: "成功",
         description: "使用量が正常に送信され、在庫数が更新されました。",
-      })
-      setIsConfirmDialogOpen(false)
-      setUsageInputs({})
+      });
+      setIsConfirmDialogOpen(false); // ダイアログを閉じる
+      setUsageInputs({}); // 使用量入力をリセット
     } catch (error) {
-      console.error('Submit error:', error)
+      console.error('Submit error:', error);
       toast({
         title: "エラー",
         description: "使用量の送信中にエラーが発生しました。もう一度お試しください。",
         variant: "destructive",
-      })
+      });
     }
-  }, [usageInputs, toast])
+  }, [usageInputs, toast]);
 
   const SortableTableHead = useCallback(({ children, sortKey }: { children: React.ReactNode, sortKey: string }) => (
     <TableHead className="cursor-pointer" onClick={() => handleSort(sortKey)}>
