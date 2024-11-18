@@ -2,7 +2,11 @@
 import '../globals.css';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { useState } from 'react';
+
+import axios from "axios";
+import Pagination from "@/components/ui/pagination";
+
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,42 +29,88 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+type ApiResponse = {
+  items: any[]; // APIの生データ
+  total_items: number;
+};
+
 type InventoryItem = {
   id: number;
-  itemName: string;
-  manufacturer: string;
-  currentQuantity: number;
-  reorderThreshold: number;
-  optimalQuantity: number;
-  orderQuantity: number;
-  unit: string;
-  status: '未発注' | '発注中' | '発注済み' | '在庫十分';
+  orderStatus: string; // 発注状況
+  shelfNumber: string; // 棚番
+  attribute: string;   // 属性
+  itemName: string;    // アイテム名
+  manufacturer: string; // メーカー名
+  optimalQuantity: number; // 適正在庫数
+  reorderThreshold: number; // 発注基準数
+  currentQuantity: number;  // 現在の在庫数
+  unit: string;  // 単位
+  orderQuantity: number; // 発注数量
+  status: "未発注" | "発注中" | "発注済み" | "在庫十分"; // ステータス
 };
 
 export default function InventoryOrderPage() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
+
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [inventoryItems] = useState<InventoryItem[]>([
-    // ダミーデータ
-    { id: 1, itemName: "切削油", manufacturer: "テックオイル", currentQuantity: 15, reorderThreshold: 20, optimalQuantity: 100, orderQuantity: 50, unit: "L", status: '未発注' },
-    { id: 2, itemName: "超硬ドリル", manufacturer: "ツールテック", currentQuantity: 8, reorderThreshold: 10, optimalQuantity: 50, orderQuantity: 20, unit: "本", status: '発注中' },
-    { id: 3, itemName: "エンドミル", manufacturer: "カッティングプロ", currentQuantity: 25, reorderThreshold: 15, optimalQuantity: 40, orderQuantity: 0, unit: "個", status: '在庫十分' },
-  ]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
 
-  const filteredItems = inventoryItems.filter(item =>
-    Object.values(item).some(value =>
+  const fetchItems = async (page: number) => {
+    try {
+      const response = await axios.get<ApiResponse>("http://localhost:3001/api/inventory/items", {
+        params: { page, per_page: itemsPerPage },
+      });
+
+      const processItems = (data: any[]): InventoryItem[] => {
+        return data.map((item) => ({
+          id: item.id,
+          itemName: item.name,
+          manufacturer: item.manufacturer || '不明',
+          currentQuantity: item.current_quantity || 0,
+          reorderThreshold: item.reorder_threshold || 0,
+          optimalQuantity: item.optimal_quantity || 0,
+          orderQuantity: 0, // 初期値
+          unit: item.unit || '',
+          shelfNumber: item.shelf_number || '', // デフォルト値
+          attribute: item.attribute || '',     // デフォルト値
+          orderStatus: '未発注', // 初期値を設定
+          status: item.current_quantity <= item.reorder_threshold
+            ? '未発注'
+            : item.current_quantity < item.optimal_quantity
+            ? '発注中'
+            : '在庫十分',
+        }));
+      };
+
+      setInventoryItems(processItems(response.data.items));
+      setTotalItems(response.data.total_items);
+    } catch (error) {
+      console.error("データの取得に失敗しました:", error);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const filteredItems = inventoryItems.filter((item) =>
+    Object.values(item).some((value) =>
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
-  const handleOrder = (itemId: number) => {
-    // 発注処理の実装
-    console.log(`アイテムID ${itemId} の発注処理を開始`);
-  };
+  useEffect(() => {
+    fetchItems(currentPage);
+  }, [currentPage]);
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   return (
     <div className="container mx-auto px-4 py-8">
-            <Header />
+      <Header />
       <Card className="mb-8">
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -75,8 +125,8 @@ export default function InventoryOrderPage() {
                 <SelectItem value="cutting">切削工具</SelectItem>
               </SelectContent>
             </Select>
-            <Input 
-              placeholder="アイテム名" 
+            <Input
+              placeholder="アイテム名"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white"
@@ -97,14 +147,14 @@ export default function InventoryOrderPage() {
               <Search className="mr-2 h-4 w-4" /> 検索
             </Button>
             <div className="flex space-x-2">
-              <Button 
+              <Button
                 onClick={() => router.push('/item-registration')}
                 className="bg-black hover:bg-gray-800 text-white"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 新規アイテム登録
               </Button>
-              <Button 
+              <Button
                 onClick={() => router.push('/inventory-history')}
                 className="bg-black hover:bg-gray-800 text-white"
               >
@@ -131,7 +181,6 @@ export default function InventoryOrderPage() {
                 <TableHead>適正在庫数</TableHead>
                 <TableHead>発注数量</TableHead>
                 <TableHead>状態</TableHead>
-                <TableHead>アクション</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -139,49 +188,19 @@ export default function InventoryOrderPage() {
                 <TableRow key={item.id}>
                   <TableCell>{item.itemName}</TableCell>
                   <TableCell>{item.manufacturer}</TableCell>
-                  <TableCell>
-                    <span className={item.currentQuantity <= item.reorderThreshold ? "text-red-600 font-medium" : ""}>
-                      {item.currentQuantity} {item.unit}
-                    </span>
-                    {item.currentQuantity <= item.reorderThreshold && (
-                      <AlertTriangle className="inline ml-2 h-4 w-4 text-red-600" />
-                    )}
-                  </TableCell>
-                  <TableCell>{item.reorderThreshold} {item.unit}</TableCell>
-                  <TableCell>{item.optimalQuantity} {item.unit}</TableCell>
-                  <TableCell>{item.orderQuantity > 0 ? `${item.orderQuantity} ${item.unit}` : '-'}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={
-                        item.status === '未発注' ? "destructive" : 
-                        item.status === '発注中' ? "secondary" : 
-                        item.status === '発注済み' ? "default" :
-                        "outline"
-                      }
-                    >
-                      {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => router.push(`/items/${item.id}/edit`)}>
-                        編集
-                      </Button>
-                      {item.currentQuantity <= item.reorderThreshold && item.status !== '発注中' && item.status !== '発注済み' && (
-                        <Button variant="outline" size="sm" onClick={() => handleOrder(item.id)}>
-                          発注
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
+                  <TableCell>{item.currentQuantity}</TableCell>
+                  <TableCell>{item.reorderThreshold}</TableCell>
+                  <TableCell>{item.optimalQuantity}</TableCell>
+                  <TableCell>{item.orderQuantity}</TableCell>
+                  <TableCell>{item.status}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
       <Footer />
-
     </div>
   );
 }

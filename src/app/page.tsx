@@ -36,17 +36,18 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 };
 
+type ApiResponse = InventoryItem[];
+
 type InventoryItem = {
   id: number;
-  orderStatus: string;
+  name: string;
+  manufacturer?: string;
+  optimal_quantity: number;
+  reorder_threshold: number;
+  current_quantity: number;
+  unit: string;
   shelfNumber: string;
   attribute: string;
-  itemName: string;
-  manufacturer: string;
-  optimalQuantity: number;
-  reorderThreshold: number;
-  currentQuantity: number;
-  unit: string;
 };
 
 export default function Dashboard() {
@@ -54,20 +55,48 @@ export default function Dashboard() {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10;
+  const totalPages = Math.ceil(inventoryItems.length / 10); // 1ページあたり10件表示の場合
+
 
   useEffect(() => {
+    type InventoryItem = {
+      id: number;
+      name: string;
+      manufacturer?: string;
+      optimal_quantity: number;
+      reorder_threshold: number;
+      current_quantity: number;
+      unit: string;
+      shelfNumber: string;
+      attribute: string;
+    };
+    
     const fetchData = async () => {
       try {
-        const response = await axios.get<InventoryItem[]>('http://localhost:3001/api/inventory/items');
-        setInventoryItems(response.data);
+        const response = await axios.get<{ items: InventoryItem[] }>('http://localhost:3001/api/inventory/items');
+        console.log('API Response:', response.data);
+    
+        const items = response.data.items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          manufacturer: item.manufacturer || '不明',
+          current_quantity: item.current_quantity || 0,
+          reorder_threshold: item.reorder_threshold || 0,
+          optimal_quantity: item.optimal_quantity || 0,
+          unit: item.unit || '',
+          shelfNumber: item.shelfNumber || 'N/A',
+          attribute: item.attribute || 'N/A',
+        }));
+        setInventoryItems(items);
       } catch (error) {
-        console.error("データの取得に失敗しました:", error);
+        console.error('データの取得に失敗しました:', error);
       }
     };
-
+  
     fetchData();
   }, []);
+
+  
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= totalPages) {
       setCurrentPage(page);
@@ -81,16 +110,22 @@ export default function Dashboard() {
     }));
   };
 
-  const filteredItems = inventoryItems
-    .filter((item) =>
-      Object.values(item).some((value) =>
-        value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-      )
+  const filteredItems = inventoryItems.filter((item) =>
+    [item.name, item.shelfNumber].some((value) =>
+      value.toLowerCase().includes(searchTerm.toLowerCase())
+    )
     )
     .sort((a, b) => {
       const order = sortConfig.direction === "asc" ? 1 : -1;
-      if (a[sortConfig.key as keyof InventoryItem] < b[sortConfig.key as keyof InventoryItem]) return -order;
-      if (a[sortConfig.key as keyof InventoryItem] > b[sortConfig.key as keyof InventoryItem]) return order;
+      const valueA = a[sortConfig.key as keyof InventoryItem];
+      const valueB = b[sortConfig.key as keyof InventoryItem];
+    
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        return valueA.localeCompare(valueB) * order;
+      }
+      if (typeof valueA === 'number' && typeof valueB === 'number') {
+        return (valueA - valueB) * order;
+      }
       return 0;
     });
 
@@ -141,8 +176,8 @@ export default function Dashboard() {
           <CardContent>
             <div className="overflow-x-auto">
             {inventoryItems.length === 0 ? (
-      <p>データがありません</p>
-    ) : (
+  <p className="text-center text-gray-500 py-6">在庫データが存在しません。</p>
+) : (
               <Table className="min-w-full divide-y divide-gray-200 bg-white shadow-md rounded-lg">
                 <TableHeader>
                   <TableRow>
@@ -171,25 +206,25 @@ export default function Dashboard() {
                 <TableBody className="bg-white divide-y divide-gray-200">
                   {filteredItems.map((item) => (
                     <TableRow key={item.id} className="hover:bg-gray-50">
-                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        <Badge variant={item.orderStatus === "発注中" ? "secondary" : "destructive"}>
-                          {item.orderStatus}
-                        </Badge>
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={item.current_quantity <= item.reorder_threshold ? "text-red-600 font-medium" : ""}>
+                           {item.current_quantity} {item.unit}
+                          </span>
+                      {item.current_quantity <= item.reorder_threshold && (
+                        <AlertTriangle className="inline ml-2 h-4 w-4 text-red-600" />
+                          )}
                       </TableCell>
                       <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.shelfNumber}</TableCell>
                       <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.attribute}</TableCell>
-                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.itemName}</TableCell>
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.name}</TableCell>
                       <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.manufacturer}</TableCell>
-                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" >{item.optimalQuantity} {item.unit}</TableCell>
-                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" >{item.reorderThreshold} {item.unit}</TableCell>
-                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" >
-                        <span className={item.currentQuantity <= item.reorderThreshold ? "text-red-600 font-medium" : ""}>
-                          {item.currentQuantity} {item.unit}
-                        </span>
-                        {item.currentQuantity <= item.reorderThreshold && (
-                          <AlertTriangle className="inline ml-2 h-4 w-4 text-red-600" />
-                        )}
-                      </TableCell>
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.optimal_quantity} {item.unit}</TableCell>
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.reorder_threshold} {item.unit}</TableCell>
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <span className={item.current_quantity <= item.reorder_threshold ? "text-red-600 font-medium" : ""}>
+          {item.current_quantity} {item.unit}
+        </span>
+      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
