@@ -50,6 +50,7 @@ type InventoryItem = {
 };
 
 export default function InventoryOrderPage() {
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 10;
@@ -59,10 +60,12 @@ export default function InventoryOrderPage() {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
 
   const fetchItems = async (page: number) => {
+    setIsLoading(true); // ローディング開始
     try {
       const response = await axios.get<ApiResponse>("http://localhost:3001/api/inventory/items", {
         params: { page, per_page: itemsPerPage },
       });
+
 
       const processItems = (data: any[]): InventoryItem[] => {
         return data.map((item) => ({
@@ -80,15 +83,16 @@ export default function InventoryOrderPage() {
           status: item.current_quantity <= item.reorder_threshold
             ? '未発注'
             : item.current_quantity < item.optimal_quantity
-            ? '発注中'
-            : '在庫十分',
+              ? '発注中'
+              : '在庫十分',
         }));
       };
-
       setInventoryItems(processItems(response.data.items));
       setTotalItems(response.data.total_items);
     } catch (error) {
       console.error("データの取得に失敗しました:", error);
+    } finally {
+      setIsLoading(false); // ローディング終了
     }
   };
 
@@ -109,98 +113,114 @@ export default function InventoryOrderPage() {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
-      <Card className="mb-8">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <Input placeholder="棚番" className="w-full bg-white" />
-            <Select>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="属性" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="oil">油脂類</SelectItem>
-                <SelectItem value="drill">ドリル類</SelectItem>
-                <SelectItem value="cutting">切削工具</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="アイテム名"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white"
-            />
-            <Select>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="メーカー名" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tech-oil">テックオイル</SelectItem>
-                <SelectItem value="tool-tech">ツールテック</SelectItem>
-                <SelectItem value="cutting-pro">カッティングプロ</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-between items-center">
-            <Button className="bg-black hover:bg-gray-800 text-white">
-              <Search className="mr-2 h-4 w-4" /> 検索
-            </Button>
-            <div className="flex space-x-2">
-              <Button
-                onClick={() => router.push('/item-registration')}
-                className="bg-black hover:bg-gray-800 text-white"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                新規アイテム登録
-              </Button>
-              <Button
-                onClick={() => router.push('/inventory-history')}
-                className="bg-black hover:bg-gray-800 text-white"
-              >
-                <History className="mr-2 h-4 w-4" />
-                履歴管理
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>在庫・発注リスト</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>アイテム名</TableHead>
-                <TableHead>メーカー</TableHead>
-                <TableHead>現在の在庫数</TableHead>
-                <TableHead>発注基準数</TableHead>
-                <TableHead>適正在庫数</TableHead>
-                <TableHead>発注数量</TableHead>
-                <TableHead>状態</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.itemName}</TableCell>
-                  <TableCell>{item.manufacturer}</TableCell>
-                  <TableCell>{item.currentQuantity}</TableCell>
-                  <TableCell>{item.reorderThreshold}</TableCell>
-                  <TableCell>{item.optimalQuantity}</TableCell>
-                  <TableCell>{item.orderQuantity}</TableCell>
-                  <TableCell>{item.status}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <Card className="mb-8">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <Input placeholder="棚番" className="w-full bg-white" />
+              <Select>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="属性" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="oil">油脂類</SelectItem>
+                  <SelectItem value="drill">ドリル類</SelectItem>
+                  <SelectItem value="cutting">切削工具</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="アイテム名"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white"
+              />
+              <Select>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="メーカー名" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tech-oil">テックオイル</SelectItem>
+                  <SelectItem value="tool-tech">ツールテック</SelectItem>
+                  <SelectItem value="cutting-pro">カッティングプロ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-between items-center">
+              <Button className="bg-black hover:bg-gray-800 text-white">
+                <Search className="mr-2 h-4 w-4" /> 検索
+              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => router.push('/item-registration')}
+                  disabled={isLoading}
+                  className="bg-black hover:bg-gray-800 text-white"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  新規アイテム登録
+                </Button>
+                <Button
+                  onClick={() => router.push('/inventory-history')}
+                  disabled={isLoading}
+                  className="bg-black hover:bg-gray-800 text-white"
+                >
+                  <History className="mr-2 h-4 w-4" />
+                  履歴管理
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>在庫・発注リスト</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <p className="text-gray-500">データを読み込んでいます...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>アイテム名</TableHead>
+                    <TableHead>メーカー</TableHead>
+                    <TableHead>現在の在庫数</TableHead>
+                    <TableHead>発注基準数</TableHead>
+                    <TableHead>適正在庫数</TableHead>
+                    <TableHead>発注数量</TableHead>
+                    <TableHead>状態</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.itemName}</TableCell>
+                      <TableCell>{item.manufacturer}</TableCell>
+                      <TableCell>{item.currentQuantity}</TableCell>
+                      <TableCell>{item.reorderThreshold}</TableCell>
+                      <TableCell>{item.optimalQuantity}</TableCell>
+                      <TableCell>{item.orderQuantity}</TableCell>
+                      <TableCell>{item.status}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(totalItems / itemsPerPage)} // 総ページ数を計算
+          onPageChange={handlePageChange}
+        />
+      </main>
       <Footer />
     </div>
+
   );
 }
