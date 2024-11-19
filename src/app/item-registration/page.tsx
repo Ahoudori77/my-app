@@ -94,10 +94,13 @@ export default function ItemRegistrationPage() {
     fetchData();
   }, []);
 
-  // 新しいカテゴリーを登録
   const handleNewCategory = async () => {
     if (!newCategory.trim()) {
-      toast({ title: "エラー", description: "カテゴリ名を入力してください。", variant: "destructive" });
+      toast({
+        title: "エラー",
+        description: "カテゴリ名を入力してください。",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -111,21 +114,34 @@ export default function ItemRegistrationPage() {
       if (!response.ok) throw new Error("カテゴリの登録に失敗しました。");
 
       const createdCategory = await response.json();
-      setCategories((prev) => [...prev, createdCategory]);
+      setCategories((prev) => [
+        ...prev,
+        { ...createdCategory, id: createdCategory.id.toString() }, // 数値を文字列に変換
+      ]);
       setNewCategory("");
       setShowNewCategoryInput(false);
 
-      toast({ title: "成功", description: "新しいカテゴリが登録されました。" });
+      toast({
+        title: "成功",
+        description: "新しいカテゴリが登録されました。",
+      });
     } catch (error) {
       console.error(error);
-      toast({ title: "エラー", description: "カテゴリの登録に失敗しました。", variant: "destructive" });
+      toast({
+        title: "エラー",
+        description: "カテゴリの登録に失敗しました。",
+        variant: "destructive",
+      });
     }
   };
 
-  // 新しいメーカーを登録
   const handleNewManufacturer = async () => {
     if (!newManufacturer.trim()) {
-      toast({ title: "エラー", description: "メーカー名を入力してください。", variant: "destructive" });
+      toast({
+        title: "エラー",
+        description: "メーカー名を入力してください。",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -139,21 +155,69 @@ export default function ItemRegistrationPage() {
       if (!response.ok) throw new Error("メーカーの登録に失敗しました。");
 
       const createdManufacturer = await response.json();
-      setManufacturers((prev) => [...prev, createdManufacturer]);
+      setManufacturers((prev) => [
+        ...prev,
+        { ...createdManufacturer, id: createdManufacturer.id.toString() }, // 数値を文字列に変換
+      ]);
       setNewManufacturer("");
       setShowNewManufacturerInput(false);
 
-      toast({ title: "成功", description: "新しいメーカーが登録されました。" });
+      toast({
+        title: "成功",
+        description: "新しいメーカーが登録されました。",
+      });
     } catch (error) {
       console.error(error);
-      toast({ title: "エラー", description: "メーカーの登録に失敗しました。", variant: "destructive" });
+      toast({
+        title: "エラー",
+        description: "メーカーの登録に失敗しました。",
+        variant: "destructive",
+      });
     }
   };
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // アイテム登録処理（略）
-  }
+    const payload = {
+      name: values.name,
+      description: values.description,
+      category_id: values.category_id,
+      shelf_number: values.shelfNumber,
+      current_quantity: values.currentQuantity,
+      optimal_quantity: values.optimalQuantity,
+      reorder_threshold: values.reorderThreshold,
+      unit: values.unit,
+      manufacturer: values.manufacturer_id,
+      supplier_info: values.supplierInfo,
+      price: values.price,
+    };
 
+    try {
+      const response = await fetch("http://127.0.0.1:3001/api/inventory/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item: payload }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("APIエラー:", errorData);
+        throw new Error("登録に失敗しました");
+      }
+
+      toast({ title: "成功", description: "アイテムが登録されました。" });
+
+      // 登録完了後、在庫・発注ページに遷移
+      router.push("/inventory-management");
+    } catch (error: any) {
+      console.error("エラー:", error.message || error);
+      toast({
+        title: "エラー",
+        description: error.message || "登録中に問題が発生しました。",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
   return (
     <div className="container mx-auto py-10">
       <Card>
@@ -206,7 +270,7 @@ export default function ItemRegistrationPage() {
             <Select
               onValueChange={(value) => {
                 const selectedCategory = categories.find((cat) => cat.name === value);
-                form.setValue("category_id", selectedCategory?.id || "");
+                form.setValue("category_id", selectedCategory?.id.toString() || ""); // 数値を文字列に変換
                 if (value === "新しいカテゴリ") setShowNewCategoryInput(true);
               }}
             >
@@ -318,7 +382,7 @@ export default function ItemRegistrationPage() {
             <Select
               onValueChange={(value) => {
                 const selectedManufacturer = manufacturers.find((manu) => manu.name === value);
-                form.setValue("manufacturer_id", selectedManufacturer?.id || "");
+                form.setValue("manufacturer_id", selectedManufacturer?.id.toString() || ""); // 数値を文字列に変換
                 if (value === "新しいメーカー") setShowNewManufacturerInput(true);
               }}
             >

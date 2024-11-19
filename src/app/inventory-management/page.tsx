@@ -106,6 +106,13 @@ export default function InventoryOrderPage() {
     )
   );
 
+  const handleEdit = (itemId: number) => {
+    router.push(`/inventory-management/edit/${itemId}`);
+  };
+
+  const handleOrder = (itemId: number) => {
+    router.push(`/inventory-management/order/${itemId}`);
+  };
   useEffect(() => {
     fetchItems(currentPage);
   }, [currentPage]);
@@ -206,6 +213,25 @@ export default function InventoryOrderPage() {
                       <TableCell>{item.optimalQuantity}</TableCell>
                       <TableCell>{item.orderQuantity}</TableCell>
                       <TableCell>{item.status}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(item.id)}
+                          >
+                            編集
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleOrder(item.id)}
+                          >
+                            発注
+                          </Button>
+                        </div>
+                      </TableCell>
+
                     </TableRow>
                   ))}
                 </TableBody>
