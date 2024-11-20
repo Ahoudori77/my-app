@@ -2,7 +2,7 @@
 import '../globals.css';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-
+import Link from "next/link";
 import axios from "axios";
 import Pagination from "@/components/ui/pagination";
 
@@ -194,6 +194,7 @@ export default function InventoryOrderPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>棚番</TableHead>
                     <TableHead>アイテム名</TableHead>
                     <TableHead>メーカー</TableHead>
                     <TableHead>現在の在庫数</TableHead>
@@ -206,6 +207,7 @@ export default function InventoryOrderPage() {
                 <TableBody>
                   {filteredItems.map((item) => (
                     <TableRow key={item.id}>
+                      <TableCell>{item.shelfNumber || "未設定"}</TableCell>
                       <TableCell>{item.itemName}</TableCell>
                       <TableCell>{item.manufacturer}</TableCell>
                       <TableCell>{item.currentQuantity}</TableCell>
@@ -220,7 +222,7 @@ export default function InventoryOrderPage() {
                             size="sm"
                             onClick={() => handleEdit(item.id)}
                           >
-                            編集
+                            <Link href={`/inventory-management/edit/${item.id}`}>編集</Link>
                           </Button>
                           <Button
                             variant="default"

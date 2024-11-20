@@ -1,12 +1,14 @@
 "use client";
-import '../globals.css';
+import "@/app/globals.css";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+
 import {
   Form,
   FormControl,
@@ -17,7 +19,6 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { useParams } from "next/navigation";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "アイテム名は必須です。" }),
@@ -42,9 +44,17 @@ const formSchema = z.object({
   price: z.number().min(0, { message: "価格は0以上である必要があります。" }),
 });
 
-export default function ItemRegistrationPage() {
+export default function ItemEditPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const params = useParams();
+  const itemId = params?.id;
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [manufacturers, setManufacturers] = useState<{ id: string; name: string }[]>([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newManufacturer, setNewManufacturer] = useState("");
+  const [showNewManufacturerInput, setShowNewManufacturerInput] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,31 +73,26 @@ export default function ItemRegistrationPage() {
     },
   });
 
-  // カテゴリー関連の状態管理
-  type Category = { id: string; name: string };
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [newCategory, setNewCategory] = useState("");
-  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
-
-  // メーカー関連の状態管理
-  type Manufacturer = { id: string; name: string };
-  const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
-  const [newManufacturer, setNewManufacturer] = useState("");
-  const [showNewManufacturerInput, setShowNewManufacturerInput] = useState(false);
-
-  // カテゴリーとメーカーのデータ取得
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const categoryResponse = await fetch("http://localhost:3001/api/categories");
-        const manufacturerResponse = await fetch("http://localhost:3001/api/manufacturers");
-        const categoryData = await categoryResponse.json();
-        const manufacturerData = await manufacturerResponse.json();
+        const [categoriesResponse, manufacturersResponse] = await Promise.all([
+          fetch("http://localhost:3001/api/categories"),
+          fetch("http://localhost:3001/api/manufacturers"),
+        ]);
 
-        setCategories(categoryData);
-        setManufacturers(manufacturerData);
+        if (!categoriesResponse.ok || !manufacturersResponse.ok) {
+          throw new Error("データの取得に失敗しました。");
+        }
+
+        const categoriesData = await categoriesResponse.json();
+        const manufacturersData = await manufacturersResponse.json();
+
+        setCategories(categoriesData);
+        setManufacturers(manufacturersData);
       } catch (error) {
-        console.error("データの取得に失敗しました。", error);
+        console.error(error);
+        toast({ title: "エラー", description: "データの取得に失敗しました。", variant: "destructive" });
       }
     };
 
@@ -96,11 +101,7 @@ export default function ItemRegistrationPage() {
 
   const handleNewCategory = async () => {
     if (!newCategory.trim()) {
-      toast({
-        title: "エラー",
-        description: "カテゴリ名を入力してください。",
-        variant: "destructive",
-      });
+      toast({ title: "エラー", description: "カテゴリ名を入力してください。", variant: "destructive" });
       return;
     }
 
@@ -114,34 +115,19 @@ export default function ItemRegistrationPage() {
       if (!response.ok) throw new Error("カテゴリの登録に失敗しました。");
 
       const createdCategory = await response.json();
-      setCategories((prev) => [
-        ...prev,
-        { ...createdCategory, id: createdCategory.id.toString() }, // 数値を文字列に変換
-      ]);
+      setCategories((prev) => [...prev, { id: createdCategory.id.toString(), name: createdCategory.name }]);
       setNewCategory("");
       setShowNewCategoryInput(false);
-
-      toast({
-        title: "成功",
-        description: "新しいカテゴリが登録されました。",
-      });
+      toast({ title: "成功", description: "新しいカテゴリが登録されました。" });
     } catch (error) {
       console.error(error);
-      toast({
-        title: "エラー",
-        description: "カテゴリの登録に失敗しました。",
-        variant: "destructive",
-      });
+      toast({ title: "エラー", description: "カテゴリの登録に失敗しました。", variant: "destructive" });
     }
   };
 
   const handleNewManufacturer = async () => {
     if (!newManufacturer.trim()) {
-      toast({
-        title: "エラー",
-        description: "メーカー名を入力してください。",
-        variant: "destructive",
-      });
+      toast({ title: "エラー", description: "メーカー名を入力してください。", variant: "destructive" });
       return;
     }
 
@@ -157,78 +143,61 @@ export default function ItemRegistrationPage() {
       const createdManufacturer = await response.json();
       setManufacturers((prev) => [
         ...prev,
-        { ...createdManufacturer, id: createdManufacturer.id.toString() }, // 数値を文字列に変換
+        { id: createdManufacturer.id.toString(), name: createdManufacturer.name },
       ]);
       setNewManufacturer("");
       setShowNewManufacturerInput(false);
-
-      toast({
-        title: "成功",
-        description: "新しいメーカーが登録されました。",
-      });
+      toast({ title: "成功", description: "新しいメーカーが登録されました。" });
     } catch (error) {
       console.error(error);
-      toast({
-        title: "エラー",
-        description: "メーカーの登録に失敗しました。",
-        variant: "destructive",
-      });
+      toast({ title: "エラー", description: "メーカーの登録に失敗しました。", variant: "destructive" });
     }
   };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const payload = {
-      name: values.name,
-      description: values.description,
-      category_id: values.category_id,
-      shelf_number: values.shelfNumber,
-      current_quantity: values.currentQuantity,
-      optimal_quantity: values.optimalQuantity,
-      reorder_threshold: values.reorderThreshold,
-      unit: values.unit,
-      manufacturer_id: Number(values.manufacturer_id),
-      supplier_info: values.supplierInfo,
-      price: values.price,
-    };
-
     try {
-
-      const requestData = {
-        ...values,
-        manufacturer_id: Number(values.manufacturer_id),
+      const formattedValues = {
+        item: {
+          name: values.name,
+          description: values.description,
+          category_id: values.category_id,
+          manufacturer_id: values.manufacturer_id,
+          unit: values.unit,
+          price: values.price,
+          shelfNumber: values.shelfNumber,
+          currentQuantity: values.currentQuantity,
+          optimalQuantity: values.optimalQuantity,
+          reorderThreshold: values.reorderThreshold,
+          supplierInfo: values.supplierInfo,
+        },
       };
-
-      const response = await fetch("http://127.0.0.1:3001/api/inventory/items", {
-        method: "POST",
+      setIsLoading(true);
+      const response = await fetch(`http://localhost:3001/api/inventory/items/${itemId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item: payload }),
+        body: JSON.stringify({ item: values }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("APIエラー:", errorData);
-        throw new Error("登録に失敗しました");
-      }
+      if (!response.ok) throw new Error("アイテムの更新に失敗しました。");
 
-      toast({ title: "成功", description: "アイテムが登録されました。" });
-
-      // 登録完了後、在庫・発注ページに遷移
+      toast({ title: "成功", description: "アイテム情報が正常に更新されました。" });
       router.push("/inventory-management");
-    } catch (error: any) {
-      console.error("エラー:", error.message || error);
-      toast({
-        title: "エラー",
-        description: error.message || "登録中に問題が発生しました。",
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "エラー", description: "更新中に問題が発生しました。", variant: "destructive" });
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // 処理終了時にローディング状態を解除
     }
   }
+
+  const [isLoading, setIsLoading] = useState(false);
+
+
   return (
     <div className="container mx-auto py-10">
       <Card>
         <CardHeader>
-          <CardTitle>アイテム登録</CardTitle>
+          <CardTitle>アイテム編集</CardTitle>
         </CardHeader>
         <CardContent>
           {Object.keys(form.formState.errors).length > 0 &&
@@ -276,7 +245,7 @@ export default function ItemRegistrationPage() {
             <Select
               onValueChange={(value) => {
                 const selectedCategory = categories.find((cat) => cat.name === value);
-                form.setValue("category_id", selectedCategory?.id.toString() || ""); // 数値を文字列に変換
+                form.setValue("category_id", selectedCategory?.id.toString() || "");
                 if (value === "新しいカテゴリ") setShowNewCategoryInput(true);
               }}
             >
@@ -311,9 +280,8 @@ export default function ItemRegistrationPage() {
                 <FormItem>
                   <FormLabel>棚番</FormLabel>
                   <FormControl>
-                    <Input placeholder="棚番を入力" {...field} />
+                    <Input {...field} placeholder="棚番を入力" />
                   </FormControl>
-                  <FormDescription>アイテムが保管されている棚の番号です。</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -326,10 +294,9 @@ export default function ItemRegistrationPage() {
                   <FormItem>
                     <FormLabel>現在の数量</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
+                      <Input type="number"
                         {...field}
-                        onChange={(e) => field.onChange(+e.target.value)}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
@@ -343,10 +310,9 @@ export default function ItemRegistrationPage() {
                   <FormItem>
                     <FormLabel>適正在庫数</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
+                      <Input type="number"
                         {...field}
-                        onChange={(e) => field.onChange(+e.target.value)}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
@@ -360,10 +326,9 @@ export default function ItemRegistrationPage() {
                   <FormItem>
                     <FormLabel>発注基準数</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
+                      <Input type="number"
                         {...field}
-                        onChange={(e) => field.onChange(+e.target.value)}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
@@ -378,13 +343,12 @@ export default function ItemRegistrationPage() {
                 <FormItem>
                   <FormLabel>単位</FormLabel>
                   <FormControl>
-                    <Input placeholder="単位を入力（例：個、本、kg）" {...field} />
+                    <Input {...field} placeholder="単位を入力（例：個、本、kg）" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {/* メーカー選択 */}
             <Select
               onValueChange={(value) => {
                 const selectedManufacturer = manufacturers.find((manu) => manu.name === value);
@@ -440,9 +404,10 @@ export default function ItemRegistrationPage() {
                   <FormLabel>価格</FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
                       {...field}
-                      onChange={(e) => field.onChange(+e.target.value)}
+                      type="number"
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      placeholder="価格を入力"
                     />
                   </FormControl>
                   <FormMessage />
@@ -450,7 +415,7 @@ export default function ItemRegistrationPage() {
               )}
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "登録中..." : "アイテムを登録"}
+              {isLoading ? "更新中..." : "更新する"}
             </Button>
             <Button
               type="button"
@@ -458,7 +423,7 @@ export default function ItemRegistrationPage() {
               className="w-full mt-2"
               variant="outline"
             >
-              登録せずに戻る
+              更新せずに戻る
             </Button>
           </form>
         </CardContent>
@@ -466,3 +431,4 @@ export default function ItemRegistrationPage() {
     </div>
   );
 }
+
