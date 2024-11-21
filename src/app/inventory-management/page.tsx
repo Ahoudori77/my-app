@@ -64,7 +64,14 @@ export default function InventoryOrderPage() {
     setIsLoading(true); // ローディング開始
     try {
       const response = await axios.get<ApiResponse>("http://localhost:3001/api/inventory/items", {
-        params: { page, per_page: itemsPerPage },
+        params: {
+          page,
+          per_page: itemsPerPage,
+          searchTerm: searchTerm || undefined, // 入力された検索キーワード
+          shelfNumber: shelfNumber || undefined, // 棚番
+          category: selectedCategory !== "すべて" ? selectedCategory : undefined, // 「すべて」の場合は条件を適用しない
+          manufacturer: selectedManufacturer !== "すべて" ? selectedManufacturer : undefined, // 同様
+        },
       });
 
 
@@ -121,6 +128,32 @@ export default function InventoryOrderPage() {
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+  const [selectedCategory, setSelectedCategory] = useState("すべて");
+  const [selectedManufacturer, setSelectedManufacturer] = useState("すべて");
+  const [shelfNumber, setShelfNumber] = useState("");
+  const [categories, setCategories] = useState<string[]>([]); // カテゴリーリスト
+  const [manufacturers, setManufacturers] = useState<string[]>([]); // メーカーリスト
+
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        const categoryResponse = await axios.get<Array<{ id: number; name: string }>>(
+          "http://localhost:3001/api/categories"
+        );
+        const manufacturerResponse = await axios.get<Array<{ id: number; name: string }>>(
+          "http://localhost:3001/api/manufacturers"
+        );
+
+        setCategories(["すべて", ...categoryResponse.data.map((cat) => cat.name)]);
+        setManufacturers(["すべて", ...manufacturerResponse.data.map((manu) => manu.name)]);
+      } catch (error) {
+        console.error("カテゴリーまたはメーカーの取得に失敗しました:", error);
+      }
+    };
+
+    fetchDropdownData();
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
@@ -129,15 +162,24 @@ export default function InventoryOrderPage() {
         <Card className="mb-8">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <Input placeholder="棚番" className="w-full bg-white" />
-              <Select>
+              <Input
+                placeholder="棚番"
+                value={shelfNumber}
+                onChange={(e) => setShelfNumber(e.target.value)} // 棚番の状態を更新
+                className="w-full bg-white"
+              />
+              <Select
+                onValueChange={(value) => setSelectedCategory(value)}
+              >
                 <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="属性" />
+                  <SelectValue placeholder="カテゴリーを選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="oil">油脂類</SelectItem>
-                  <SelectItem value="drill">ドリル類</SelectItem>
-                  <SelectItem value="cutting">切削工具</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Input
@@ -146,19 +188,26 @@ export default function InventoryOrderPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-white"
               />
-              <Select>
+              <Select
+                onValueChange={(value) => setSelectedManufacturer(value)}
+              >
                 <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="メーカー名" />
+                  <SelectValue placeholder="メーカーを選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tech-oil">テックオイル</SelectItem>
-                  <SelectItem value="tool-tech">ツールテック</SelectItem>
-                  <SelectItem value="cutting-pro">カッティングプロ</SelectItem>
+                  {manufacturers.map((manufacturer) => (
+                    <SelectItem key={manufacturer} value={manufacturer}>
+                      {manufacturer}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex justify-between items-center">
-              <Button className="bg-black hover:bg-gray-800 text-white">
+              <Button
+                onClick={() => fetchItems(1)} // 最初のページから検索
+                className="bg-black hover:bg-gray-800 text-white"
+              >
                 <Search className="mr-2 h-4 w-4" /> 検索
               </Button>
               <div className="flex space-x-2">
