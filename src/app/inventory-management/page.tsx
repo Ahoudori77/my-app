@@ -46,6 +46,7 @@ type InventoryItem = {
   currentQuantity: number;  // 現在の在庫数
   unit: string;  // 単位
   orderQuantity: number; // 発注数量
+  category: string; // カテゴリー
   status: "未発注" | "発注中" | "発注済み" | "在庫十分"; // ステータス
 };
 
@@ -78,6 +79,7 @@ export default function InventoryOrderPage() {
           orderQuantity: 0, // 初期値
           unit: item.unit || '',
           shelfNumber: item.shelf_number || '', // デフォルト値
+          category: item.category?.name || '未分類',
           attribute: item.attribute || '',     // デフォルト値
           orderStatus: '未発注', // 初期値を設定
           status: item.current_quantity <= item.reorder_threshold
@@ -195,6 +197,7 @@ export default function InventoryOrderPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>棚番</TableHead>
+                    <TableHead>カテゴリー</TableHead>
                     <TableHead>アイテム名</TableHead>
                     <TableHead>メーカー</TableHead>
                     <TableHead>現在の在庫数</TableHead>
@@ -208,6 +211,7 @@ export default function InventoryOrderPage() {
                   {filteredItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.shelfNumber || "未設定"}</TableCell>
+                      <TableCell>{item.category || "未分類"}</TableCell>
                       <TableCell>{item.itemName}</TableCell>
                       <TableCell>{item.manufacturer}</TableCell>
                       <TableCell>{item.currentQuantity}</TableCell>
