@@ -9,23 +9,35 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { Home, Box, ClipboardList, Settings, HelpCircle, FileInput } from "lucide-react";
 
 // ナビゲーション項目の定義
 const navigationItems = [
-  { name: 'ダッシュボード', href: '/', icon: Home },
-  { name: '在庫・発注管理', href: '/inventory-management', icon: Box },  // 修正
-  { name: '使用量入力', href: '/usage-input', icon: FileInput },
-  { name: '設定', href: '/settings', icon: Settings },
-  { name: 'ヘルプ', href: '/help', icon: HelpCircle },
+  { name: "ダッシュボード", href: "/", icon: Home },
+  { name: "在庫・発注管理", href: "/inventory-management", icon: Box },
+  { name: "使用量入力", href: "/usage-input", icon: FileInput },
+  { name: "設定", href: "/settings", icon: Settings },
+  { name: "ヘルプ", href: "/help", icon: HelpCircle },
 ];
+
+// ページごとのタイトルを定義
+const pageTitles: Record<string, string> = {
+  "/": "ダッシュボード",
+  "/inventory-management": "在庫・発注管理",
+  "/usage-input": "使用量入力",
+  "/settings": "設定",
+  "/help": "ヘルプ",
+};
 
 export default function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const pathname = usePathname(); // usePathname を使って現在のパスを取得
+  const pathname = usePathname(); // 現在のパスを取得
+
+  // 現在のページのタイトルを取得
+  const currentTitle = pathname && pageTitles[pathname] ? pageTitles[pathname] : "在庫管理システム";
 
   // 現在のページとナビゲーションリンクを比較する関数
   const isCurrentPage = (href: string) => pathname === href;
@@ -50,9 +62,11 @@ export default function Header() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    prefetch={false}  // 遷移速度を向上させるためにプリフェッチを無効化
+                    prefetch={false}
                     className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                      isCurrentPage(item.href) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      isCurrentPage(item.href)
+                        ? "bg-gray-100 text-gray-900"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     }`}
                     onClick={() => setIsSidebarOpen(false)}
                   >
@@ -63,7 +77,7 @@ export default function Header() {
               </nav>
             </SheetContent>
           </Sheet>
-          <span className="text-lg font-semibold text-gray-900">ダッシュボード</span>
+          <span className="text-lg font-semibold text-gray-900">{currentTitle}</span>
         </div>
         <div className="text-xl font-bold text-gray-900 flex justify-center">在庫管理システム</div>
         <div className="flex items-center space-x-4">
