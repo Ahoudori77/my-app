@@ -71,9 +71,10 @@ export default function InventoryOrderPage() {
           shelfNumber: shelfNumber || undefined, // 棚番
           category: selectedCategory !== "すべて" ? selectedCategory : undefined, // 「すべて」の場合は条件を適用しない
           manufacturer: selectedManufacturer !== "すべて" ? selectedManufacturer : undefined, // 同様
+          sortField: sortField || undefined, // ソート対象のカラム
+          sortOrder: sortOrder || undefined, // ソート順
         },
       });
-
 
       const processItems = (data: any[]): InventoryItem[] => {
         return data.map((item) => ({
@@ -133,6 +134,19 @@ export default function InventoryOrderPage() {
   const [shelfNumber, setShelfNumber] = useState("");
   const [categories, setCategories] = useState<string[]>([]); // カテゴリーリスト
   const [manufacturers, setManufacturers] = useState<string[]>([]); // メーカーリスト
+  const [sortField, setSortField] = useState<string>(""); // ソート対象のカラム名
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc"); // 昇順か降順か
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // 同じフィールドをクリックした場合はソート順を反転
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // 新しいフィールドの場合は昇順でソート
+      setSortField(field);
+      setSortOrder("asc");
+    }
+    fetchItems(1); // ソート条件が変更されたので最初のページを再取得
+  };
 
   useEffect(() => {
     const fetchDropdownData = async () => {
@@ -245,15 +259,15 @@ export default function InventoryOrderPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>棚番</TableHead>
-                    <TableHead>カテゴリー</TableHead>
-                    <TableHead>アイテム名</TableHead>
-                    <TableHead>メーカー</TableHead>
+                    <TableHead onClick={() => handleSort("shelfNumber")}>棚番</TableHead>
+                    <TableHead onClick={() => handleSort("category")}>カテゴリー</TableHead>
+                    <TableHead onClick={() => handleSort("itemName")}>アイテム名</TableHead>
+                    <TableHead onClick={() => handleSort("manufacturer")}>メーカー</TableHead>
                     <TableHead>現在の在庫数</TableHead>
                     <TableHead>発注基準数</TableHead>
                     <TableHead>適正在庫数</TableHead>
                     <TableHead>発注数量</TableHead>
-                    <TableHead>状態</TableHead>
+                    <TableHead onClick={() => handleSort("status")}>状態</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
