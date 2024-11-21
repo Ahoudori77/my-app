@@ -72,7 +72,7 @@ export default function InventoryOrderPage() {
         return data.map((item) => ({
           id: item.id,
           itemName: item.name,
-          manufacturer: item.manufacturer || '不明',
+          manufacturer: item.manufacturer?.name || "不明",
           currentQuantity: item.current_quantity || 0,
           reorderThreshold: item.reorder_threshold || 0,
           optimalQuantity: item.optimal_quantity || 0,
@@ -213,7 +213,7 @@ export default function InventoryOrderPage() {
                       <TableCell>{item.shelfNumber || "未設定"}</TableCell>
                       <TableCell>{item.category || "未分類"}</TableCell>
                       <TableCell>{item.itemName}</TableCell>
-                      <TableCell>{item.manufacturer}</TableCell>
+                      <TableCell>{item.manufacturer || "不明"}</TableCell>
                       <TableCell>{item.currentQuantity}</TableCell>
                       <TableCell>{item.reorderThreshold}</TableCell>
                       <TableCell>{item.optimalQuantity}</TableCell>
