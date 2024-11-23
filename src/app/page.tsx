@@ -1,47 +1,27 @@
 'use client';
-import '../styles/globals.css';
-import { Search } from "lucide-react";
+import './globals.css';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useState, useEffect } from 'react';
+import axios from "axios";
+import Pagination from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Pagination from "@/components/ui/pagination";
-import SortableTableHead from "@/components/ui/SortableTableHead";
-import axios from "axios";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableHead,
-  TableRow,
-} from "@/components/ui/table";
-import { AlertTriangle } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-type SortConfig = {
-  key: string;
-  direction: 'asc' | 'desc';
-};
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search } from 'lucide-react';
 
 type InventoryItem = {
   id: number;
+  shelf_number: string;
+  category: { name: string };
+  manufacturer: { name: string };
   name: string;
-  manufacturer?: string;
+  current_quantity: number;
   optimal_quantity: number;
   reorder_threshold: number;
-  current_quantity: number;
-  unit: string;
-  shelfNumber: string;
-  attribute: string;
+  status: "在庫十分" | "発注必要" | "在庫不足" | "未設定";
 };
 
 type ApiResponse = {
@@ -50,197 +30,192 @@ type ApiResponse = {
 };
 
 export default function Dashboard() {
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: 'asc' });
-  const [searchParams, setSearchParams] = useState({
-    shelfNumber: '',
-    attribute: '',
-    name: '',
-    manufacturer: '',
-  });
-
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 10;
 
-  const fetchData = async () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [shelfNumber, setShelfNumber] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("すべて");
+  const [selectedManufacturer, setSelectedManufacturer] = useState("すべて");
+  const [categories, setCategories] = useState<string[]>(["すべて"]);
+  const [manufacturers, setManufacturers] = useState<string[]>(["すべて"]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [sortField, setSortField] = useState<string>(""); // ソート対象のカラム名
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc"); // 昇順か降順か
+
+  // アイテム一覧取得
+  const fetchItems = async (page: number) => {
+    setIsLoading(true);
     try {
       const response = await axios.get<ApiResponse>("http://localhost:3001/api/inventory/items", {
         params: {
-          page: currentPage,
-          perPage: itemsPerPage,
-          sortField: sortConfig.key,
-          sortOrder: sortConfig.direction,
-          ...searchParams,
+          page,
+          per_page: itemsPerPage,
+          searchTerm: searchTerm || undefined,
+          shelfNumber: shelfNumber || undefined,
+          category: selectedCategory !== "すべて" ? selectedCategory : undefined,
+          manufacturer: selectedManufacturer !== "すべて" ? selectedManufacturer : undefined,
+          sortField: sortField || undefined,
+          sortOrder: sortOrder || undefined,
         },
       });
 
       setInventoryItems(response.data.items);
       setTotalItems(response.data.total_items);
     } catch (error) {
-      console.error('データの取得に失敗しました:', error);
+      console.error("データの取得に失敗しました:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [currentPage, sortConfig, searchParams]);
+  // カテゴリー・メーカー取得
+  const fetchDropdownData = async () => {
+    try {
+      const categoryResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/categories");
+      const manufacturerResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/manufacturers");
 
-  const handleSort = (key: string) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
-    }));
+      // データを変換してドロップダウンにセット
+      setCategories(["すべて", ...categoryResponse.data.map((cat) => cat.name)]);
+      setManufacturers(["すべて", ...manufacturerResponse.data.map((manu) => manu.name)]);
+    } catch (error) {
+      console.error("カテゴリーまたはメーカーの取得に失敗しました:", error);
+    }
+  };
+
+  // 初期データ取得
+  useEffect(() => {
+    // カテゴリー・メーカーを取得
+    fetchDropdownData();
+
+    // アイテム一覧を取得（デフォルト設定）
+    fetchItems(currentPage);
+  }, []); // 初期ロード時のみ実行
+
+  // ソートや検索条件が変更された場合のデータ再取得
+  useEffect(() => {
+    fetchItems(1); // 初期ページに戻して再取得
+  }, [sortField, sortOrder, selectedCategory, selectedManufacturer]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchItems(page); // ページ変更時に再取得
   };
 
   const handleSearch = () => {
-    setCurrentPage(1); // 検索時はページをリセット
-    fetchData();
+    setCurrentPage(1);
+    fetchItems(1);
   };
 
-  const handlePageChange = (page: number) => {
-    if (page > 0 && page <= Math.ceil(totalItems / itemsPerPage)) {
-      setCurrentPage(page);
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
-      <main className="flex-1 container mx-auto px-6 py-8 space-y-8">
-        {/* 検索フィルター */}
-        <Card className="mb-8 p-4 shadow-sm border rounded-lg">
+
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <Card className="mb-8">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <Input
                 placeholder="棚番"
-                value={searchParams.shelfNumber}
-                onChange={(e) =>
-                  setSearchParams((prev) => ({ ...prev, shelfNumber: e.target.value }))
-                }
-                className="w-full"
+                value={shelfNumber}
+                onChange={(e) => setShelfNumber(e.target.value)}
+                className="w-full bg-white"
               />
-              <Select
-                onValueChange={(value) =>
-                  setSearchParams((prev) => ({ ...prev, attribute: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="属性" />
+              <Select onValueChange={(value) => setSelectedCategory(value)}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="カテゴリーを選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">すべて</SelectItem>
-                  <SelectItem value="oil">油脂類</SelectItem>
-                  <SelectItem value="drill">ドリル類</SelectItem>
-                  <SelectItem value="cutting">切削工具</SelectItem>
+                  {categories.map((category, index) => (
+                    <SelectItem key={index} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Input
                 placeholder="アイテム名"
-                value={searchParams.name}
-                onChange={(e) =>
-                  setSearchParams((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="w-full"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white"
               />
-              <Select
-                onValueChange={(value) =>
-                  setSearchParams((prev) => ({ ...prev, manufacturer: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="メーカー名" />
+              <Select onValueChange={(value) => setSelectedManufacturer(value)}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="メーカーを選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">すべて</SelectItem>
-                  <SelectItem value="tech-oil">テックオイル</SelectItem>
-                  <SelectItem value="tool-tech">ツールテック</SelectItem>
-                  <SelectItem value="cutting-pro">カッティングプロ</SelectItem>
+                  {manufacturers.map((manufacturer, index) => (
+                    <SelectItem key={index} value={manufacturer}>
+                      {manufacturer}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              onClick={handleSearch}
-              className="mt-4 bg-black text-white hover:bg-gray-700 px-4 py-2 rounded"
-            >
-              <Search className="mr-2 h-4 w-4" /> 検索
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* テーブル */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-900">在庫一覧</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              {inventoryItems.length === 0 ? (
-                <p className="text-center text-gray-500 py-6">在庫データが存在しません。</p>
-              ) : (
-                <Table className="min-w-full divide-y divide-gray-200 bg-white shadow-md rounded-lg">
-                  <TableHeader>
-                    <TableRow>
-                      <SortableTableHead
-                        sortKey="shelfNumber"
-                        currentSortKey={sortConfig.key}
-                        direction={sortConfig.direction}
-                        onSort={handleSort}
-                      >
-                        棚番
-                      </SortableTableHead>
-                      <SortableTableHead
-                        sortKey="attribute"
-                        currentSortKey={sortConfig.key}
-                        direction={sortConfig.direction}
-                        onSort={handleSort}
-                      >
-                        属性
-                      </SortableTableHead>
-                      <SortableTableHead
-                        sortKey="name"
-                        currentSortKey={sortConfig.key}
-                        direction={sortConfig.direction}
-                        onSort={handleSort}
-                      >
-                        アイテム名
-                      </SortableTableHead>
-                      <SortableTableHead
-                        sortKey="manufacturer"
-                        currentSortKey={sortConfig.key}
-                        direction={sortConfig.direction}
-                        onSort={handleSort}
-                      >
-                        メーカー名
-                      </SortableTableHead>
-                      <SortableTableHead
-                        sortKey="current_quantity"
-                        currentSortKey={sortConfig.key}
-                        direction={sortConfig.direction}
-                        onSort={handleSort}
-                      >
-                        在庫数
-                      </SortableTableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {inventoryItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.shelfNumber}</TableCell>
-                        <TableCell>{item.attribute}</TableCell>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.manufacturer}</TableCell>
-                        <TableCell>{item.current_quantity}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+            <div className="flex justify-between items-center">
+              <Button
+                onClick={handleSearch}
+                className="bg-black hover:bg-gray-800 text-white"
+              >
+                <Search className="mr-2 h-4 w-4" /> 検索
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* ページネーション */}
+        <Card>
+          <CardHeader>
+            <CardTitle>在庫・発注リスト</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <p className="text-gray-500">データを読み込んでいます...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead onClick={() => handleSort("shelfNumber")}>棚番</TableHead>
+                    <TableHead onClick={() => handleSort("category")}>カテゴリー</TableHead>
+                    <TableHead onClick={() => handleSort("name")}>アイテム名</TableHead>
+                    <TableHead onClick={() => handleSort("manufacturer")}>メーカー</TableHead>
+                    <TableHead>現在の在庫数</TableHead>
+                    <TableHead>発注基準数</TableHead>
+                    <TableHead>適正在庫数</TableHead>
+                    <TableHead onClick={() => handleSort("status")}>状態</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inventoryItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.shelf_number || "未設定"}</TableCell>
+                      <TableCell>{item.category.name || "未分類"}</TableCell>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell>{item.manufacturer.name || "不明"}</TableCell>
+                      <TableCell>{item.current_quantity}</TableCell>
+                      <TableCell>{item.reorder_threshold}</TableCell>
+                      <TableCell>{item.optimal_quantity}</TableCell>
+                      <TableCell>{item.status}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
         <Pagination
           currentPage={currentPage}
           totalPages={Math.ceil(totalItems / itemsPerPage)}
