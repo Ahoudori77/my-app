@@ -42,10 +42,27 @@ export default function Dashboard() {
   const [categories, setCategories] = useState<string[]>(["すべて"]);
   const [manufacturers, setManufacturers] = useState<string[]>(["すべて"]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [sortField, setSortField] = useState<string>(""); // ソート対象のカラム名
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc"); // 昇順か降順か
+  const [sortField, setSortField] = useState<string>("shelfNumber"); // デフォルトのソートフィールド
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc"); // デフォルトのソート順
 
-  // アイテム一覧取得
+  // 在庫状態を計算する関数
+  const calculateStatus = (
+    current_quantity: number | null,
+    optimal_quantity: number | null,
+    reorder_threshold: number | null
+  ): string => {
+    if (current_quantity === null || optimal_quantity === null || reorder_threshold === null) {
+      return "未設定";
+    }
+    if (current_quantity <= reorder_threshold) {
+      return "発注必要";
+    } else if (current_quantity < optimal_quantity) {
+      return "在庫不足";
+    }
+    return "在庫十分";
+  };
+
+  // フェッチしたアイテムの処理を追加
   const fetchItems = async (page: number) => {
     setIsLoading(true);
     try {
@@ -62,7 +79,12 @@ export default function Dashboard() {
         },
       });
 
-      setInventoryItems(response.data.items);
+      const processedItems = response.data.items.map((item) => ({
+        ...item,
+        status: item.status || calculateStatus(item.current_quantity, item.optimal_quantity, item.reorder_threshold),
+      }));
+
+      setInventoryItems(processedItems);
       setTotalItems(response.data.total_items);
     } catch (error) {
       console.error("データの取得に失敗しました:", error);
@@ -87,17 +109,14 @@ export default function Dashboard() {
 
   // 初期データ取得
   useEffect(() => {
-    // カテゴリー・メーカーを取得
-    fetchDropdownData();
-
-    // アイテム一覧を取得（デフォルト設定）
-    fetchItems(currentPage);
-  }, []); // 初期ロード時のみ実行
+    fetchDropdownData(); // カテゴリー・メーカーを取得
+    fetchItems(1); // アイテム一覧を取得（デフォルト設定）
+  }, []);
 
   // ソートや検索条件が変更された場合のデータ再取得
   useEffect(() => {
-    fetchItems(1); // 初期ページに戻して再取得
-  }, [sortField, sortOrder, selectedCategory, selectedManufacturer]);
+    fetchItems(currentPage); // 現在のページでデータを再取得
+  }, [currentPage, sortField, sortOrder]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -110,11 +129,16 @@ export default function Dashboard() {
   };
 
   const handleSort = (field: string) => {
-    if (sortField === field) {
+    // フロントエンドのフィールド名をバックエンドに対応させる
+    const backendField = field === "name" ? "itemName" : field;
+
+    if (sortField === backendField) {
+      // 同じフィールドでソート方向を切り替える
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
-      setSortField(field);
-      setSortOrder("asc");
+      // 新しいフィールドでソートを設定
+      setSortField(backendField);
+      setSortOrder("asc"); // 初期値を昇順にする
     }
   };
 
@@ -207,7 +231,7 @@ export default function Dashboard() {
                       <TableCell>{item.current_quantity}</TableCell>
                       <TableCell>{item.reorder_threshold}</TableCell>
                       <TableCell>{item.optimal_quantity}</TableCell>
-                      <TableCell>{item.status}</TableCell>
+                      <TableCell>{item.status || calculateStatus(item.current_quantity, item.optimal_quantity, item.reorder_threshold)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
