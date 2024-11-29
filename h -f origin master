@@ -1,0 +1,188 @@
+[33mcommit 52b00dcf9e3bef32f5c177d464142aaa8bc419ae[m[33m ([m[1;36mHEAD -> [m[1;32m検索機能・レイアウト調整[m[33m, [m[1;31morigin/検索機能・レイアウト調整[m[33m)[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Sun Nov 24 17:35:41 2024 +0900
+
+    ダッシュボードページレイアウト調整
+
+[33mcommit a4602e48c731ba76ebe5b42249937f17d9a153bd[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Sun Nov 24 00:07:10 2024 +0900
+
+    ダッシュボードページレイアウト調整
+
+[33mcommit d0ecfddbaa8e93f23efa3f4a55f901c8f890dfaa[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Thu Nov 21 19:32:25 2024 +0900
+
+    ページごとのタイトル変更
+
+[33mcommit 29a74c01157f85756ae7a1f13f37d972e1b78fd4[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Thu Nov 21 17:02:34 2024 +0900
+
+    ソート機能実装
+
+[33mcommit ae21992e39fc64a14058c8b3c6750a91e8063309[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Thu Nov 21 15:24:40 2024 +0900
+
+    検索機能の実装
+
+[33mcommit 6eed813b4fb2fb1baeba03f373365c02c56bb742[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Thu Nov 21 13:56:38 2024 +0900
+
+    メーカー名の表示
+
+[33mcommit 64ae91db0f2ea1c9a58067ac0c25d6ac077234bf[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Thu Nov 21 09:41:08 2024 +0900
+
+    在庫・発注 カテゴリー欄追加
+
+[33mcommit 59f1bdad831c310ac70bb9d48234887031a472b2[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Wed Nov 20 23:43:15 2024 +0900
+
+    アイテム編集ページ作成
+
+[33mcommit 5fc03dbd28db8ae9761754d1a525fdc5404a2d38[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Tue Nov 19 14:45:40 2024 +0900
+
+    編集・発注ボタン作成
+
+[33mcommit ad98aebe9bb3e6b2ff651bde7f6de1ae677b3a5b[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Tue Nov 19 12:04:24 2024 +0900
+
+    メーカー名登録機能
+
+[33mcommit d5590b1b3034d15200fa0c7d4ebb13c7a329b9af[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Tue Nov 19 11:33:37 2024 +0900
+
+    ページネーション調整
+
+[33mcommit 4511dd999b432790f50dd0864fb1f67c838d2ecb[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Merge: abfbb83 73e7645
+Author: poponotann <rakurusu77@gmail.com>
+Date:   Mon Nov 18 09:27:44 2024 +0900
+
+    Merge pull request #5 from Ahoudori77/アイテム表示機能
+    
+    アイテム表示機能
+
+[33mcommit 73e7645160bc3aa3cbcbce67a28955d137bf0a71[m[33m ([m[1;31morigin/アイテム表示機能[m[33m, [m[1;32mアイテム表示機能[m[33m)[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Mon Nov 18 09:26:58 2024 +0900
+
+    アイテム表示機能
+
+[33mcommit abfbb83b2b055674a7658937cc83b4a4e5c81bf6[m
+Merge: f3325cb ece62fe
+Author: poponotann <rakurusu77@gmail.com>
+Date:   Sun Nov 17 17:06:50 2024 +0900
+
+    Merge pull request #4 from Ahoudori77/item-registrationページ
+    
+    アイテム登録機能
+
+[33mcommit ece62fe8fd675ecaf5a5f0651b09a8f4af062282[m[33m ([m[1;31morigin/item-registrationページ[m[33m, [m[1;32mitem-registrationページ[m[33m)[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Sun Nov 17 17:06:02 2024 +0900
+
+    アイテム登録機能
+
+[33mcommit f3325cbbcf05bed2b0d2e8374b801efeaea3bb55[m
+Merge: 5b0205f da7201c
+Author: poponotann <rakurusu77@gmail.com>
+Date:   Thu Nov 14 13:43:21 2024 +0900
+
+    Merge pull request #3 from Ahoudori77/item-registrationページ
+    
+    アイテム登録画面作成
+
+[33mcommit da7201cbbaa4ce9c0ed253c84faf82d778d8416a[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Thu Nov 14 13:39:20 2024 +0900
+
+    アイテム登録画面作成
+
+[33mcommit 5b0205fc7a99a8cf2a6e49099d61d0819669cc10[m
+Merge: 822752b 31805ee
+Author: poponotann <rakurusu77@gmail.com>
+Date:   Thu Nov 14 00:11:16 2024 +0900
+
+    Merge pull request #2 from Ahoudori77/usage-inputページ作成
+    
+    Usage inputページ作成
+
+[33mcommit 31805ee70c48482a3f67b820f3974abf9a333cf9[m[33m ([m[1;31morigin/usage-inputページ作成[m[33m, [m[1;32musage-inputページ作成[m[33m)[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Thu Nov 14 00:08:43 2024 +0900
+
+    使用量入力ページ作成
+
+[33mcommit 68672c4accab76d7b2e94bc543dbe8e658b75780[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Tue Nov 12 19:55:15 2024 +0900
+
+    使用量入力ページ作成
+
+[33mcommit 822752bdea9590fe5b1392873f10c9e4bf112122[m
+Merge: 45ca24f 477fb29
+Author: poponotann <rakurusu77@gmail.com>
+Date:   Tue Nov 12 18:39:59 2024 +0900
+
+    Merge pull request #1 from Ahoudori77/Dashboardページ
+    
+    Dashboardページ
+
+[33mcommit 477fb29278e5c15a246fbb943c0d14edba3d2125[m[33m ([m[1;31morigin/Dashboardページ[m[33m, [m[1;32mDashboardページ[m[33m)[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Tue Nov 12 18:29:55 2024 +0900
+
+    ハンバーガーメニュー・ページネーション調整
+
+[33mcommit ce3fd3e4459bbddf347833b0b476f7fe35a9c2f8[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Tue Nov 12 17:42:35 2024 +0900
+
+    ダッシュボードの調整・CSS反映
+
+[33mcommit 0ddf376d780f9928a165ec86a45cf186f054e341[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Mon Nov 11 16:34:57 2024 +0900
+
+    ダッシュボードの作成
+
+[33mcommit 45ca24fe59d11da5fc0dafc8e3a73f23490ce5f1[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Sun Nov 10 23:31:00 2024 +0900
+
+    共通のコンポーネントを作成
+
+[33mcommit b57b31deee2a71d623d7d5c27a18ab5adf25bdf1[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Sun Nov 10 16:48:44 2024 +0900
+
+    shadcn/uiのコンポーネント導入
+
+[33mcommit 92d26f40682fbfe6615a998c31f2889c201497c2[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Sun Nov 10 16:24:21 2024 +0900
+
+    APIの接続とデータ取得確認
+
+[33mcommit 4e469916b5e4e5769ddfa8b7481b11e093fbc95c[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Sun Nov 10 15:50:54 2024 +0900
+
+    環境設定
+
+[33mcommit 4db65f23f6f1037850fa188f4b3ecd61306b43f5[m
+Author: Ahoudori77 <rakurusu77@gmail.com>
+Date:   Sun Nov 10 13:45:19 2024 +0900
+
+    first commit
