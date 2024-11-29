@@ -41,6 +41,8 @@ export default function UsageInputPage() {
   const [categories, setCategories] = useState<string[]>(["すべて"]);
   const [manufacturers, setManufacturers] = useState<string[]>(["すべて"]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [sortField, setSortField] = useState<string>("shelfNumber");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // アイテム取得
   const fetchItems = async (page: number) => {
@@ -54,6 +56,8 @@ export default function UsageInputPage() {
           shelfNumber: shelfNumber || undefined,
           category: selectedCategory !== "すべて" ? selectedCategory : undefined,
           manufacturer: selectedManufacturer !== "すべて" ? selectedManufacturer : undefined,
+          sortField,
+          sortOrder,
         },
       });
 
@@ -71,39 +75,60 @@ export default function UsageInputPage() {
     }
   };
 
-  // カテゴリー・メーカー取得
-  const fetchDropdownData = async () => {
-    try {
-      const categoryResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/categories");
-      const manufacturerResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/manufacturers");
-
-      setCategories(["すべて", ...categoryResponse.data.map((cat) => cat.name)]);
-      setManufacturers(["すべて", ...manufacturerResponse.data.map((manu) => manu.name)]);
-    } catch (error) {
-      console.error("カテゴリーまたはメーカーの取得に失敗しました:", error);
-    }
-  };
-
-  // 初期データ取得
-  useEffect(() => {
-    fetchDropdownData();
-    fetchItems(1);
-  }, []);
-
-  // 使用量を更新
-  const updateUsageQuantity = (id: number, change: number) => {
+  // 使用量を更新する関数
+  const updateUsageQuantity = (id: number, delta: number) => {
     setInventoryItems((prevItems) =>
       prevItems.map((item) =>
         item.id === id
-          ? { ...item, usage_quantity: Math.max(0, item.usage_quantity + change) }
+          ? { ...item, usage_quantity: Math.max(0, item.usage_quantity + delta) }
           : item
       )
     );
   };
 
+  // 使用量をサーバーに送信する関数
+  const submitUsageData = async (id: number) => {
+    const item = inventoryItems.find((item) => item.id === id);
+
+    if (!item) return;
+
+    try {
+      await axios.patch(`http://localhost:3001/api/inventory/items/${id}/update_usage`, {
+        usage_quantity: item.usage_quantity,
+      });
+
+      // データ更新後リロード
+      fetchItems(currentPage);
+    } catch (error) {
+      console.error("使用量の更新に失敗しました:", error);
+    }
+  };
+
+ // 初期データ取得
+ useEffect(() => {
+  fetchDropdownData();
+  fetchItems(1);
+}, []);  // カテゴリー・メーカー取得
+const fetchDropdownData = async () => {
+  try {
+    const categoryResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/categories");
+    const manufacturerResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/manufacturers");
+
+    setCategories(["すべて", ...categoryResponse.data.map((cat) => cat.name)]);
+    setManufacturers(["すべて", ...manufacturerResponse.data.map((manu) => manu.name)]);
+  } catch (error) {
+    console.error("カテゴリーまたはメーカーの取得に失敗しました:", error);
+  }
+};
+
+// 初期データ取得
+useEffect(() => {
+  fetchDropdownData();
+  fetchItems(1);
+}, []);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    fetchItems(page);
   };
 
   const handleSearch = () => {
@@ -174,36 +199,43 @@ export default function UsageInputPage() {
                   <TableHead>棚番</TableHead>
                   <TableHead>カテゴリー</TableHead>
                   <TableHead>アイテム名</TableHead>
-                  <TableHead>メーカー</TableHead>
                   <TableHead>現在の在庫数</TableHead>
                   <TableHead>使用量</TableHead>
+                  <TableHead>操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {inventoryItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{item.shelf_number || "未設定"}</TableCell>
-                    <TableCell>{item.category.name || "未分類"}</TableCell>
+                    <TableCell>{item.category?.name || "未分類"}</TableCell>
                     <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.manufacturer.name || "不明"}</TableCell>
                     <TableCell>{item.current_quantity}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" onClick={() => updateUsageQuantity(item.id, -1)}>
-                          -
+                          -1
                         </Button>
                         <Input
                           type="number"
                           value={item.usage_quantity}
                           onChange={(e) =>
-                            updateUsageQuantity(item.id, +e.target.value - item.usage_quantity)
+                            updateUsageQuantity(item.id, Number(e.target.value) - item.usage_quantity)
                           }
                           className="w-16 text-center"
                         />
                         <Button variant="ghost" onClick={() => updateUsageQuantity(item.id, 1)}>
-                          +
+                          +1
                         </Button>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        onClick={() => submitUsageData(item.id)}
+                        className="bg-blue-500 text-white hover:bg-blue-600"
+                      >
+                        更新
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
