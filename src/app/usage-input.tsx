@@ -1,389 +1,295 @@
-'use client'
+'use client';
+import './globals.css';
 import Header from "@/components/Header";
-import Footer from "@/components/Footer"; 
-import { useState, useCallback } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Menu, LogOut, Search, Plus, Minus, AlertTriangle, ChevronUp, ChevronDown } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/Dialog';
-import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
+import Footer from "@/components/Footer";
+import { useState, useEffect } from 'react';
+import axios from "axios";
 import Pagination from "@/components/ui/pagination";
-
-type UserRole = 'field' | 'office'
-
-type SortConfig = {
-  key: string
-  direction: 'asc' | 'desc'
-}
-
-type SearchFilters = {
-  shelfNumber: string
-  attribute: string
-  itemName: string
-  manufacturer: string
-}
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search } from 'lucide-react';
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 type InventoryItem = {
-  id: number
-  name: string
-  shelfNumber: string
-  attribute: string
-  currentQuantity: number
-  optimalQuantity: number
-  reorderThreshold: number
-  orderStatus: string
-  unit: string
-}
+  id: number;
+  shelf_number: string;
+  category: { name: string };
+  manufacturer: { name: string };
+  name: string;
+  current_quantity: number;
+  optimal_quantity: number;
+  reorder_threshold: number;
+  usage_quantity: number; // 使用量
+};
 
-export default function UsageInputPage({ userRole }: { userRole: UserRole }) {
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: 'asc' })
-  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
-    shelfNumber: '',
-    attribute: '',
-    itemName: '',
-    manufacturer: ''
-  })
-  const [searchResults, setSearchResults] = useState<InventoryItem[]>([])
-  const [usageInputs, setUsageInputs] = useState<Record<number, number>>({})
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const itemsPerPage = 10
-  const { toast } = useToast()
+type ApiResponse = {
+  items: InventoryItem[];
+  total_items: number;
+};
 
-  const handleSort = useCallback((key: string) => {
-    setSortConfig(prevConfig => ({
-      key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
-    }))
-  }, [])
+export default function UsageInputPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
 
-  const handleSearchFilterChange = useCallback((key: keyof SearchFilters, value: string) => {
-    setSearchFilters(prev => ({ ...prev, [key]: value }))
-  }, [])
+  const [searchTerm, setSearchTerm] = useState("");
+  const [shelfNumber, setShelfNumber] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("すべて");
+  const [selectedManufacturer, setSelectedManufacturer] = useState("すべて");
+  const [categories, setCategories] = useState<string[]>(["すべて"]);
+  const [manufacturers, setManufacturers] = useState<string[]>(["すべて"]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [sortField, setSortField] = useState<string>("shelfNumber");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const handleSearch = useCallback(async () => {
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const handleOpenModal = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+    setIsModalOpen(false);
+  };
+
+  const handleConfirmUpdate = async () => {
+    if (!selectedItem) return;
+
+    try {
+      await axios.patch(
+        `http://localhost:3001/api/inventory/items/${selectedItem.id}/update_usage`,
+        { usage_quantity: selectedItem.usage_quantity }
+      );
+      alert("更新が完了しました！");
+      setIsModalOpen(false);
+      fetchItems(currentPage); // データ再取得
+    } catch (error) {
+      console.error("使用量の更新に失敗しました:", error);
+    }
+  };
+
+  // アイテム取得
+  const fetchItems = async (page: number) => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:3001/api/inventory/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...searchFilters, page: currentPage, itemsPerPage }),
+      const response = await axios.get<ApiResponse>("http://localhost:3001/api/inventory/items", {
+        params: {
+          page,
+          per_page: itemsPerPage,
+          searchTerm: searchTerm || undefined,
+          shelfNumber: shelfNumber || undefined,
+          category: selectedCategory !== "すべて" ? selectedCategory : undefined,
+          manufacturer: selectedManufacturer !== "すべて" ? selectedManufacturer : undefined,
+          sortField,
+          sortOrder,
+        },
       });
-      if (!response.ok) throw new Error('検索に失敗しました');
-      const data = await response.json();
-      setSearchResults(data.items); // 検索結果をセット
-      setTotalPages(data.totalPages); // 総ページ数をセット
+
+      const processedItems = response.data.items.map((item) => ({
+        ...item,
+        usage_quantity: 0, // 初期値を0に設定
+      }));
+
+      setInventoryItems(processedItems);
+      setTotalItems(response.data.total_items);
     } catch (error) {
-      console.error('Search error:', error);
-      toast({
-        title: "エラー",
-        description: "検索中にエラーが発生しました。もう一度お試しください。",
-        variant: "destructive",
-      });
+      console.error("データの取得に失敗しました:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [searchFilters, currentPage, toast])
+  };
 
-  const handleUsageChange = useCallback((id: number, value: number) => {
-    setUsageInputs(prev => ({
-      ...prev,
-      [id]: Math.max(0, value)
-    }))
-  }, [])
+  // 使用量を更新する関数
+  const updateUsageQuantity = (id: number, delta: number) => {
+    setInventoryItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id
+          ? { ...item, usage_quantity: Math.max(0, item.usage_quantity + delta) }
+          : item
+      )
+    );
+  };
 
-  const handleConfirmOpen = useCallback(() => {
-    setIsConfirmDialogOpen(true)
-  }, [])
+  // 使用量をサーバーに送信する関数
+  const submitUsageData = async (id: number) => {
+    const item = inventoryItems.find((item) => item.id === id);
 
-  const handleConfirmClose = useCallback(() => {
-    setIsConfirmDialogOpen(false)
-  }, [])
+    if (!item) return;
 
-  const handleSubmit = useCallback(async () => {
     try {
-      const response = await fetch('http://127.0.0.1:3001/api/inventory/usage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(usageInputs),
+      await axios.patch(`http://localhost:3001/api/inventory/items/${id}/update_usage`, {
+        usage_quantity: item.usage_quantity,
       });
-      if (!response.ok) throw new Error('使用量の送信に失敗しました');
-      
-      // 在庫数を自動更新
-      setSearchResults(prevResults => 
-        prevResults.map(item => ({
-          ...item,
-          currentQuantity: item.currentQuantity - (usageInputs[item.id] || 0),
-        }))
-      );
-  
-      toast({
-        title: "成功",
-        description: "使用量が正常に送信され、在庫数が更新されました。",
-      });
-      setIsConfirmDialogOpen(false); // ダイアログを閉じる
-      setUsageInputs({}); // 使用量入力をリセット
+
+      // データ更新後リロード
+      fetchItems(currentPage);
     } catch (error) {
-      console.error('Submit error:', error);
-      toast({
-        title: "エラー",
-        description: "使用量の送信中にエラーが発生しました。もう一度お試しください。",
-        variant: "destructive",
-      });
+      console.error("使用量の更新に失敗しました:", error);
     }
-  }, [usageInputs, toast]);
+  };
 
-  const SortableTableHead = useCallback(({ children, sortKey }: { children: React.ReactNode, sortKey: string }) => (
-    <TableHead className="cursor-pointer" onClick={() => handleSort(sortKey)}>
-      <div className="flex items-center">
-        {children}
-        {sortConfig.key === sortKey && (
-          sortConfig.direction === 'asc' ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />
-        )}
-      </div>
-    </TableHead>
-  ), [sortConfig, handleSort])
+  // 初期データ取得
+  useEffect(() => {
+    fetchDropdownData();
+    fetchItems(1);
+  }, []);  // カテゴリー・メーカー取得
+  const fetchDropdownData = async () => {
+    try {
+      const categoryResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/categories");
+      const manufacturerResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/manufacturers");
 
+      setCategories(["すべて", ...categoryResponse.data.map((cat) => cat.name)]);
+      setManufacturers(["すべて", ...manufacturerResponse.data.map((manu) => manu.name)]);
+    } catch (error) {
+      console.error("カテゴリーまたはメーカーの取得に失敗しました:", error);
+    }
+  };
+
+  // 初期データ取得
+  useEffect(() => {
+    fetchDropdownData();
+    fetchItems(1);
+  }, []);
 
   const handlePageChange = (page: number) => {
-    if (page > 0 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    setCurrentPage(page);
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchItems(1);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
-<Header />
+      <Header />
 
       <main className="flex-1 container mx-auto px-4 py-8">
-        {/* 検索フィルター */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>アイテム検索</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="shelf-number">棚番</Label>
-                <Input
-                  id="shelf-number"
-                  placeholder="棚番を入力"
-                  value={searchFilters.shelfNumber}
-                  onChange={(e) => handleSearchFilterChange('shelfNumber', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="attribute">属性</Label>
-                <Select value={searchFilters.attribute} onValueChange={(value) => handleSearchFilterChange('attribute', value)}>
-                  <SelectTrigger id="attribute">
-                    <SelectValue placeholder="属性を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="oil">油脂類</SelectItem>
-                    <SelectItem value="drill">ドリル類</SelectItem>
-                    <SelectItem value="cutting">切削工具</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="item-name">アイテム名</Label>
-                <Input
-                  id="item-name"
-                  placeholder="アイテム名を入力"
-                  value={searchFilters.itemName}
-                  onChange={(e) => handleSearchFilterChange('itemName', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="manufacturer">メーカー名</Label>
-                <Input
-                  id="manufacturer"
-                  placeholder="メーカー名を入力"
-                  value={searchFilters.manufacturer}
-                  onChange={(e) => handleSearchFilterChange('manufacturer', e.target.value)}
-                />
-              </div>
-              <div className="flex items-end">
-                <Button className="w-full" onClick={handleSearch} disabled={isLoading}>
-                  {isLoading ? "検索中..." : <><Search className="mr-2 h-4 w-4" /> 検索</>}
-                </Button>
-              </div>
+        <div className="p-4 bg-white shadow-md rounded-md">
+          <h2 className="text-xl font-semibold mb-4">アイテム検索</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <Input
+              placeholder="棚番"
+              value={shelfNumber}
+              onChange={(e) => setShelfNumber(e.target.value)}
+              className="w-full bg-white"
+            />
+            <Select onValueChange={(value) => setSelectedCategory(value)}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="カテゴリーを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category, index) => (
+                  <SelectItem key={index} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="アイテム名"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white"
+            />
+            <Select onValueChange={(value) => setSelectedManufacturer(value)}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="メーカーを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {manufacturers.map((manufacturer, index) => (
+                  <SelectItem key={index} value={manufacturer}>
+                    {manufacturer}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={handleSearch} className="bg-black hover:bg-gray-800 text-white">
+            <Search className="mr-2 h-4 w-4" /> 検索
+          </Button>
+        </div>
+
+        <div className="p-4 bg-white shadow-md rounded-md mt-6">
+          <h2 className="text-xl font-semibold mb-4">使用量入力</h2>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <p className="text-gray-500">データを読み込んでいます...</p>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 現在の検索条件 */}
-        <Card className="mb-4">
-          <CardContent>
-            <h3 className="text-lg font-semibold mb-2">現在の検索条件:</h3>
-            <ul className="list-disc list-inside">
-              {searchFilters.shelfNumber && <li>棚番: {searchFilters.shelfNumber}</li>}
-              {searchFilters.attribute && <li>属性: {searchFilters.attribute}</li>}
-              {searchFilters.itemName && <li>アイテム名: {searchFilters.itemName}</li>}
-              {searchFilters.manufacturer && <li>メーカー名: {searchFilters.manufacturer}</li>}
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 検索結果と使用量入力 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>使用量入力</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {searchResults.length > 0 && (
-              <div className="mb-4">
-                <p className="font-semibold">検索結果: {searchResults.length}件</p>
-              </div>
-            )}
-            {searchResults.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <SortableTableHead sortKey="orderStatus">発注状況</SortableTableHead>
-                      <SortableTableHead sortKey="name">アイテム名</SortableTableHead>
-                      <SortableTableHead sortKey="shelfNumber">棚番</SortableTableHead>
-                      <SortableTableHead sortKey="attribute">属性</SortableTableHead>
-                      <TableHead className="text-right">適正在庫数</TableHead>
-                      <TableHead className="text-right">発注基準数</TableHead>
-                      <SortableTableHead sortKey="currentQuantity">現在の在庫数</SortableTableHead>
-                      <TableHead className="text-right">使用量</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {searchResults.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <Badge variant={item.orderStatus === "発注中" ? "secondary" : "destructive"}>
-                            {item.orderStatus}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.shelfNumber}</TableCell>
-                        <TableCell>{item.attribute}</TableCell>
-                        <TableCell className="text-right">{item.optimalQuantity} {item.unit}</TableCell>
-                        <TableCell className="text-right">{item.reorderThreshold} {item.unit}</TableCell>
-                        <TableCell className="text-right">
-                          <span className={item.currentQuantity <= item.reorderThreshold ? "text-red-600 font-medium" : ""}>
-                            {item.currentQuantity} {item.unit}
-                          </span>
-                          {item.currentQuantity <= item.reorderThreshold && (
-                            <AlertTriangle className="inline ml-2 h-4 w-4 text-red-600" />
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleUsageChange(item.id, (usageInputs[item.id] || 0) - 1)}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <Input
-                              type="number"
-                              value={usageInputs[item.id] || ''}
-                              onChange={(e) => handleUsageChange(item.id, parseInt(e.target.value) || 0)}
-                              className="w-20 text-right"
-                            />
-                            <span className="ml-2">{item.unit}</span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleUsageChange(item.id, (usageInputs[item.id] || 0) + 1)}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground">
-                <p>検索結果がありません。検索条件を変更してお試しください。</p>
-                <p className="mt-2">
-                  検索条件: 
-                  {searchFilters.shelfNumber && `棚番: ${searchFilters.shelfNumber}, `}
-                  {searchFilters.attribute && `属性: ${searchFilters.attribute}, `}
-                  {searchFilters.itemName && `アイテム名: ${searchFilters.itemName}, `}
-                  {searchFilters.manufacturer && `メーカー名: ${searchFilters.manufacturer}`}
-                </p>
-              </div>
-            )}
-            {searchResults.length > 0 && (
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleConfirmOpen}>使用量を確認</Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 確認ダイアログ */}
-        <Dialog open={isConfirmDialogOpen} onOpenChange={() => setIsConfirmDialogOpen(false)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>使用量の確認</DialogTitle>
-              <DialogDescription>
-                以下の使用量を送信します。内容を確認してください。
-              </DialogDescription>
-            </DialogHeader>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>棚番</TableHead>
+                  <TableHead>カテゴリー</TableHead>
                   <TableHead>アイテム名</TableHead>
+                  <TableHead>現在の在庫数</TableHead>
                   <TableHead>使用量</TableHead>
+                  <TableHead>操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {searchResults.filter(item => usageInputs[item.id] > 0).map((item) => (
+                {inventoryItems.map((item) => (
                   <TableRow key={item.id}>
+                    <TableCell>{item.shelf_number || "未設定"}</TableCell>
+                    <TableCell>{item.category?.name || "未分類"}</TableCell>
                     <TableCell>{item.name}</TableCell>
-                    <TableCell className="text-right">{usageInputs[item.id]} {item.unit}</TableCell>
+                    <TableCell>{item.current_quantity}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" onClick={() => updateUsageQuantity(item.id, -1)}>
+                          -1
+                        </Button>
+                        <Input
+                          type="number"
+                          value={item.usage_quantity}
+                          onChange={(e) =>
+                            updateUsageQuantity(item.id, Number(e.target.value) - item.usage_quantity)
+                          }
+                          className="w-16 text-center"
+                        />
+                        <Button variant="ghost" onClick={() => updateUsageQuantity(item.id, 1)}>
+                          +1
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        onClick={() => handleOpenModal(item)}
+                        className="bg-blue-500 text-white hover:bg-blue-600"
+                      >
+                        更新
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-            <DialogFooter>
-              <Button variant="outline" onClick={handleConfirmClose}>
-                キャンセル
-              </Button>
-              <Button onClick={handleSubmit}>送信</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
+          )}
+        </div>
 
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={Math.ceil(totalItems / itemsPerPage)}
           onPageChange={handlePageChange}
         />
       </main>
+
       <Footer />
+      {isModalOpen && selectedItem && (
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onConfirm={handleConfirmUpdate}
+          itemName={selectedItem.name}
+          usageQuantity={selectedItem.usage_quantity}
+        />
+      )}
     </div>
-  )
+  );
 }
