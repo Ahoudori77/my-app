@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from 'lucide-react';
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 type InventoryItem = {
   id: number;
@@ -43,6 +44,34 @@ export default function UsageInputPage() {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [sortField, setSortField] = useState<string>("shelfNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const handleOpenModal = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+    setIsModalOpen(false);
+  };
+
+  const handleConfirmUpdate = async () => {
+    if (!selectedItem) return;
+
+    try {
+      await axios.patch(
+        `http://localhost:3001/api/inventory/items/${selectedItem.id}/update_usage`,
+        { usage_quantity: selectedItem.usage_quantity }
+      );
+      alert("更新が完了しました！");
+      setIsModalOpen(false);
+      fetchItems(currentPage); // データ再取得
+    } catch (error) {
+      console.error("使用量の更新に失敗しました:", error);
+    }
+  };
 
   // アイテム取得
   const fetchItems = async (page: number) => {
@@ -104,28 +133,28 @@ export default function UsageInputPage() {
     }
   };
 
- // 初期データ取得
- useEffect(() => {
-  fetchDropdownData();
-  fetchItems(1);
-}, []);  // カテゴリー・メーカー取得
-const fetchDropdownData = async () => {
-  try {
-    const categoryResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/categories");
-    const manufacturerResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/manufacturers");
+  // 初期データ取得
+  useEffect(() => {
+    fetchDropdownData();
+    fetchItems(1);
+  }, []);  // カテゴリー・メーカー取得
+  const fetchDropdownData = async () => {
+    try {
+      const categoryResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/categories");
+      const manufacturerResponse = await axios.get<{ id: number; name: string }[]>("http://localhost:3001/api/manufacturers");
 
-    setCategories(["すべて", ...categoryResponse.data.map((cat) => cat.name)]);
-    setManufacturers(["すべて", ...manufacturerResponse.data.map((manu) => manu.name)]);
-  } catch (error) {
-    console.error("カテゴリーまたはメーカーの取得に失敗しました:", error);
-  }
-};
+      setCategories(["すべて", ...categoryResponse.data.map((cat) => cat.name)]);
+      setManufacturers(["すべて", ...manufacturerResponse.data.map((manu) => manu.name)]);
+    } catch (error) {
+      console.error("カテゴリーまたはメーカーの取得に失敗しました:", error);
+    }
+  };
 
-// 初期データ取得
-useEffect(() => {
-  fetchDropdownData();
-  fetchItems(1);
-}, []);
+  // 初期データ取得
+  useEffect(() => {
+    fetchDropdownData();
+    fetchItems(1);
+  }, []);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -231,7 +260,7 @@ useEffect(() => {
                     </TableCell>
                     <TableCell>
                       <Button
-                        onClick={() => submitUsageData(item.id)}
+                        onClick={() => handleOpenModal(item)}
                         className="bg-blue-500 text-white hover:bg-blue-600"
                       >
                         更新
@@ -252,6 +281,15 @@ useEffect(() => {
       </main>
 
       <Footer />
+      {isModalOpen && selectedItem && (
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onConfirm={handleConfirmUpdate}
+          itemName={selectedItem.name}
+          usageQuantity={selectedItem.usage_quantity}
+        />
+      )}
     </div>
   );
 }
