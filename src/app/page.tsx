@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from 'lucide-react';
+import ProtectedPage from "@/pages/protected";
+
 
 type InventoryItem = {
   id: number;
@@ -143,6 +145,7 @@ export default function Dashboard() {
   };
 
   return (
+    <ProtectedPage>
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
 
@@ -248,5 +251,6 @@ export default function Dashboard() {
       </main>
       <Footer />
     </div>
+    </ProtectedPage>
   );
 }

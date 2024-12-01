@@ -17,3 +17,18 @@ export const updateInventoryItem = async (itemId: number, data: any) => {
   const response = await axios.put(`${API_BASE_URL}/inventory/${itemId}`, data);
   return response.data;
 };
+
+const api = axios.create({
+  baseURL: "http://localhost:3001/api", // バックエンドのURL
+});
+
+// リクエスト時にヘッダーにトークンを追加
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;

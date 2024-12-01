@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import axios from "axios";
 import Pagination from "@/components/ui/pagination";
+import ProtectedPage from "@/pages/protected";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -169,6 +170,8 @@ export default function InventoryOrderPage() {
   }, []);
 
   return (
+    <ProtectedPage>
+
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
 
@@ -316,6 +319,7 @@ export default function InventoryOrderPage() {
       </main>
       <Footer />
     </div>
+    </ProtectedPage>
 
   );
 }

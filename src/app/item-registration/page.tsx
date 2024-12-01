@@ -41,6 +41,8 @@ const formSchema = z.object({
   supplierInfo: z.string().min(1, { message: "仕入先情報は必須です。" }),
   price: z.number().min(0, { message: "価格は0以上である必要があります。" }),
 });
+import ProtectedPage from "@/pages/protected";
+
 
 export default function ItemRegistrationPage() {
   const router = useRouter();
@@ -225,6 +227,7 @@ export default function ItemRegistrationPage() {
     }
   }
   return (
+    <ProtectedPage>
     <div className="container mx-auto py-10">
       <Card>
         <CardHeader>
@@ -464,5 +467,6 @@ export default function ItemRegistrationPage() {
         </CardContent>
       </Card>
     </div>
+    </ProtectedPage>
   );
 }

@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from 'lucide-react';
 import ConfirmationModal from "@/components/ConfirmationModal";
+import ProtectedPage from "@/pages/protected";
+
 
 type InventoryItem = {
   id: number;
@@ -166,6 +168,7 @@ export default function UsageInputPage() {
   };
 
   return (
+    <ProtectedPage>
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
 
@@ -291,5 +294,6 @@ export default function UsageInputPage() {
         />
       )}
     </div>
+    </ProtectedPage>
   );
 }

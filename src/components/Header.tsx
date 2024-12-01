@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/sheet";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Home, Box, ClipboardList, Settings, HelpCircle, FileInput } from "lucide-react";
+import axios from "@/lib/api";
 
 // ナビゲーション項目の定義
 const navigationItems = [
@@ -34,6 +35,7 @@ const pageTitles: Record<string, string> = {
 
 export default function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [username, setUsername] = useState("ゲスト");
   const pathname = usePathname(); // 現在のパスを取得
 
   // 現在のページのタイトルを取得
@@ -41,6 +43,32 @@ export default function Header() {
 
   // 現在のページとナビゲーションリンクを比較する関数
   const isCurrentPage = (href: string) => pathname === href;
+
+  // ユーザー名を取得する関数
+  const fetchUserName = async () => {
+    try {
+      const response = await axios.get("/api/auth/me"); // APIエンドポイントでユーザー情報を取得
+      setUsername(response.data.name || "不明なユーザー");
+    } catch (error) {
+      console.error("ユーザー情報の取得に失敗しました", error);
+    }
+  };
+
+  // ログアウト関数
+  const handleLogout = async () => {
+    try {
+      await axios.delete("/api/auth/logout"); // APIでログアウト
+      localStorage.removeItem("authToken"); // トークンを削除
+      alert("ログアウトしました");
+      window.location.href = "/login"; // ログインページにリダイレクト
+    } catch (error) {
+      console.error("ログアウトに失敗しました", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserName(); // コンポーネントマウント時にユーザー名を取得
+  }, []);
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -84,8 +112,8 @@ export default function Header() {
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
-          <span className="text-sm font-medium text-gray-700">山田太郎</span>
-          <Button variant="ghost" size="icon">
+          <span className="text-sm font-medium text-gray-700">{username}</span>
+          <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />
           </Button>
         </div>

@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import ProtectedPage from "@/pages/protected";
 
 import {
   Form,
@@ -194,6 +195,8 @@ export default function ItemEditPage() {
 
 
   return (
+    <ProtectedPage>
+
     <div className="container mx-auto py-10">
       <Card>
         <CardHeader>
@@ -429,6 +432,8 @@ export default function ItemEditPage() {
         </CardContent>
       </Card>
     </div>
+    </ProtectedPage>
+
   );
 }
 
