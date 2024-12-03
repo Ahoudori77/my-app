@@ -1,21 +1,29 @@
-import { useRouter } from "next/router";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 export default function Protected({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter(); // useRouter を使用
+  const router = useRouter(); // useRouter を next/navigation からインポート
 
   useEffect(() => {
     const fetchUser = async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        router.push("/login"); // トークンがない場合もログイン画面へ
+        return;
+      }
+    
       try {
-        const response = await api.get("/auth/me");
+        const response = await api.get("/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setUser(response.data);
       } catch (err) {
-        router.push("/login"); // ログイン画面にリダイレクト
+        router.push("/login");
       } finally {
-        setIsLoading(false); // ロード状態を解除
+        setIsLoading(false);
       }
     };
 

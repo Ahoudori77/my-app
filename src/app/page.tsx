@@ -12,7 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from 'lucide-react';
 import ProtectedPage from "@/pages/protected";
-
+import { useRouter } from "next/router";
+import api from "@/lib/api";
 
 type InventoryItem = {
   id: number;
@@ -46,6 +47,26 @@ export default function Dashboard() {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [sortField, setSortField] = useState<string>("shelfNumber"); // デフォルトのソートフィールド
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc"); // デフォルトのソート順
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  useEffect(() => {
+    const verifyAuth = async () => {
+      try {
+        await api.get("/auth/me"); // 認証確認のエンドポイント
+        setIsAuthenticated(true);
+      } catch (error) {
+        localStorage.removeItem("jwtToken"); // 不正なトークンの場合削除
+        alert("ログインが必要です");
+        router.push("/login"); // ログインページにリダイレクト
+      }
+    };
+
+    verifyAuth();
+  }, [router]);
+
+  if (!isAuthenticated) {
+    return <p>認証確認中...</p>;
+  }
 
   // 在庫状態を計算する関数
   const calculateStatus = (
