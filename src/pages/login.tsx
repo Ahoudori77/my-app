@@ -15,23 +15,24 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
     try {
-      const response = await api.post("/users/sign_in", {
+      const response = await api.post("/api/users/sign_in", {
         user: {
           email,
           password,
         },
       });
-    
+  
       const { jwt } = response.data;
+  
+      // トークンをローカルストレージに保存
       localStorage.setItem("jwtToken", jwt);
+  
       alert("ログイン成功");
-      router.push("/dashboard");
+      router.push("/dashboard"); // ダッシュボードにリダイレクト
     } catch (error: any) {
-      setErrorMessage(
-        error.response?.data?.error || "ログインに失敗しました。"
-      );
+      setErrorMessage(error.response?.data?.error || "ログインに失敗しました。");
     }
   };
 

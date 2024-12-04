@@ -1,4 +1,5 @@
 'use client';
+import withAuth from "@/hoc/withAuth";
 import './globals.css';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -12,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from 'lucide-react';
 import ProtectedPage from "@/pages/protected";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 
 type InventoryItem = {
@@ -32,7 +33,7 @@ type ApiResponse = {
   total_items: number;
 };
 
-export default function Dashboard() {
+function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -167,111 +168,112 @@ export default function Dashboard() {
 
   return (
     <ProtectedPage>
-    <div className="min-h-screen flex flex-col bg-gray-100">
-      <Header />
+      <div className="min-h-screen flex flex-col bg-gray-100">
+        <Header />
 
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <Input
-                placeholder="棚番"
-                value={shelfNumber}
-                onChange={(e) => setShelfNumber(e.target.value)}
-                className="w-full bg-white"
-              />
-              <Select onValueChange={(value) => setSelectedCategory(value)}>
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="カテゴリーを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category, index) => (
-                    <SelectItem key={index} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="アイテム名"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white"
-              />
-              <Select onValueChange={(value) => setSelectedManufacturer(value)}>
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="メーカーを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {manufacturers.map((manufacturer, index) => (
-                    <SelectItem key={index} value={manufacturer}>
-                      {manufacturer}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-between items-center">
-              <Button
-                onClick={handleSearch}
-                className="bg-black hover:bg-gray-800 text-white"
-              >
-                <Search className="mr-2 h-4 w-4" /> 検索
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>在庫・発注リスト</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center items-center py-8">
-                <p className="text-gray-500">データを読み込んでいます...</p>
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <Input
+                  placeholder="棚番"
+                  value={shelfNumber}
+                  onChange={(e) => setShelfNumber(e.target.value)}
+                  className="w-full bg-white"
+                />
+                <Select onValueChange={(value) => setSelectedCategory(value)}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="カテゴリーを選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category, index) => (
+                      <SelectItem key={index} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  placeholder="アイテム名"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-white"
+                />
+                <Select onValueChange={(value) => setSelectedManufacturer(value)}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="メーカーを選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {manufacturers.map((manufacturer, index) => (
+                      <SelectItem key={index} value={manufacturer}>
+                        {manufacturer}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead onClick={() => handleSort("shelfNumber")}>棚番</TableHead>
-                    <TableHead onClick={() => handleSort("category")}>カテゴリー</TableHead>
-                    <TableHead onClick={() => handleSort("name")}>アイテム名</TableHead>
-                    <TableHead onClick={() => handleSort("manufacturer")}>メーカー</TableHead>
-                    <TableHead>現在の在庫数</TableHead>
-                    <TableHead>発注基準数</TableHead>
-                    <TableHead>適正在庫数</TableHead>
-                    <TableHead onClick={() => handleSort("status")}>状態</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {inventoryItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.shelf_number || "未設定"}</TableCell>
-                      <TableCell>{item.category.name || "未分類"}</TableCell>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell>{item.manufacturer.name || "不明"}</TableCell>
-                      <TableCell>{item.current_quantity}</TableCell>
-                      <TableCell>{item.reorder_threshold}</TableCell>
-                      <TableCell>{item.optimal_quantity}</TableCell>
-                      <TableCell>{item.status || calculateStatus(item.current_quantity, item.optimal_quantity, item.reorder_threshold)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+              <div className="flex justify-between items-center">
+                <Button
+                  onClick={handleSearch}
+                  className="bg-black hover:bg-gray-800 text-white"
+                >
+                  <Search className="mr-2 h-4 w-4" /> 検索
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={Math.ceil(totalItems / itemsPerPage)}
-          onPageChange={handlePageChange}
-        />
-      </main>
-      <Footer />
-    </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>在庫・発注リスト</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <p className="text-gray-500">データを読み込んでいます...</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead onClick={() => handleSort("shelfNumber")}>棚番</TableHead>
+                      <TableHead onClick={() => handleSort("category")}>カテゴリー</TableHead>
+                      <TableHead onClick={() => handleSort("name")}>アイテム名</TableHead>
+                      <TableHead onClick={() => handleSort("manufacturer")}>メーカー</TableHead>
+                      <TableHead>現在の在庫数</TableHead>
+                      <TableHead>発注基準数</TableHead>
+                      <TableHead>適正在庫数</TableHead>
+                      <TableHead onClick={() => handleSort("status")}>状態</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {inventoryItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.shelf_number || "未設定"}</TableCell>
+                        <TableCell>{item.category.name || "未分類"}</TableCell>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>{item.manufacturer.name || "不明"}</TableCell>
+                        <TableCell>{item.current_quantity}</TableCell>
+                        <TableCell>{item.reorder_threshold}</TableCell>
+                        <TableCell>{item.optimal_quantity}</TableCell>
+                        <TableCell>{item.status || calculateStatus(item.current_quantity, item.optimal_quantity, item.reorder_threshold)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(totalItems / itemsPerPage)}
+            onPageChange={handlePageChange}
+          />
+        </main>
+        <Footer />
+      </div>
     </ProtectedPage>
   );
 }
+export default withAuth(Dashboard); // HOC を適用
